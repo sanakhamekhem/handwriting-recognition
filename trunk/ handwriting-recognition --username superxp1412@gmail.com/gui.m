@@ -35,7 +35,7 @@ function varargout = gui(varargin)
 
 % Edit the above text to modify the response to help gui
 
-% Last Modified by GUIDE v2.5 29-Jun-2011 06:20:30
+% Last Modified by GUIDE v2.5 29-Jun-2011 19:30:45
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -77,7 +77,7 @@ setappdata(handles.figure1, 'executionStatus', 1);
 %cursor inclination angle) to [0,180]
 set(handles.slider2, 'Min', 0);
 set(handles.slider2, 'Max', 180);
-set(handles.slider2, 'SliderStep', [0 1.0/179]);
+set(handles.slider2, 'SliderStep', [5/180.0 5/180.0]);
 set(handles.slider2, 'Value', 90);
 
 % UIWAIT makes gui wait for user response (see UIRESUME)
@@ -155,6 +155,7 @@ setappdata(handles.figure1, 'executionStatus', 2);
 %file selected
 if inputLength > 1
     set(handles.slider1,'Enable', 'on');
+    set(handles.listbox1,'Enable', 'on');
     set(handles.slider1,'Min',1);
     set(handles.slider1,'Max',size(fileName,2));
     set(handles.slider1,'SliderStep', [1/(size(fileName,2)-1) 0]);
@@ -172,12 +173,18 @@ function slider1_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
-%Get the new index
-index = get(hObject, 'Value');
-%Change selected item in the listbox
-set(handles.listbox1, 'Value', index); 
-%Change the displayed picture
-setDisplayedImage(handles, index);
+%Check if images are selected
+if getappdata(handles.figure1, 'executionStatus') ~= 1
+    %Get the new index
+    index = get(hObject, 'Value');
+    %Change selected item in the listbox
+    set(handles.listbox1, 'Value', index); 
+    %Change the displayed picture
+    setDisplayedImage(handles, index);
+else
+    set(hObject, 'Enable', 'off');
+    set(handles.listbox1, 'Enable', 'off');
+end
 
 function setDisplayedImage(handles,index)
 
@@ -231,20 +238,21 @@ function axes3_CreateFcn(hObject, eventdata, handles)
 % Hint: place code in OpeningFcn to populate axes3
 axes(hObject);
 %Draw the cursor default at 90 degrees
-line([0 0], [-0.5 0.5], 'LineWidth', 2.8)
+line([0 0], [-0.7 0.7], 'LineWidth', 2.8)
 
 %Function to draw the cursor on display when inclination has changed
 function drawCursor(handles, angle)
-%Get the axes of cursor
+%Get the axes of cursor and clear previous drawings
 axes(handles.axes3);
+cla;
 
 %%TODO clear the earlier cursor line
 
 %%TODO correct the angles
 % Cursor line will have length of 1 and middle point of it will be origin
 % Draw the cursor lines in two halves
-line([cos(angle/180*pi) 0], [sin(angle/180*pi) 0], 'LineWidth', 2.8);
-line([0 -cos(angle/180*pi)], [0 -sin(angle/180*pi)], 'LineWidth', 2.8);
+line([cos(angle/180*pi)*0.7 0], [sin(angle/180*pi)*0.7 0], 'LineWidth', 2.8);
+line([0 -cos(angle/180*pi)*0.7], [0 -sin(angle/180*pi)*0.7], 'LineWidth', 2.8);
 
 % --- Executes on button press in pushbutton1.
 function pushbutton1_Callback(hObject, eventdata, handles)
@@ -358,6 +366,8 @@ function slider2_Callback(hObject, eventdata, handles)
 value = get(hObject, 'Value')
 %Update the value in editbox
 set(handles.edit1, 'String' , num2str(value));
+%Draw the cursor at new angle
+drawCursor(handles, value);
 
 % --- Executes during object creation, after setting all properties.
 function slider2_CreateFcn(hObject, eventdata, handles)
@@ -380,10 +390,21 @@ function listbox1_Callback(hObject, eventdata, handles)
 % Hints: contents = cellstr(get(hObject,'String')) returns listbox1 contents as cell array
 %        contents{get(hObject,'Value')} returns selected item from listbox1
 
+%Check if images are selected
+if getappdata(handles.figure1, 'executionStatus') ~= 1
+    %Get the new index
+    index = get(hObject, 'Value');
+    %Set the image slider's value accordingly
+    set(handles.slider1, 'Value', index);
+    %Change the displayed picture
+    setDisplayedImage(handles, index);
+else
+    set(hObject, 'Enable', 'off');
+    set(handles.slider1, 'Enable', 'off');
+end
+
 %Get the index of selected image
 index = get(hObject, 'Value');
-%Set the image slider's value accordingly
-set(handles.slider1, 'Value', index);
 %Change the displayed image
 setDisplayedImage(handles,index)
 
@@ -418,3 +439,12 @@ function slider2_KeyPressFcn(hObject, eventdata, handles)
 %	Character: character interpretation of the key(s) that was pressed
 %	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
 % handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in togglebutton2.
+function togglebutton2_Callback(hObject, eventdata, handles)
+% hObject    handle to togglebutton2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of togglebutton2
