@@ -1,3 +1,16 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Application data stored at handles.figure1
+% 1) images = [pathName fileName] - name of the directory, followed by the
+% names of image file names
+% 2) inputLength - length of the selected images
+% 3) executionStatus -  I.   Waiting for images to be selected
+%                       II.  Images selected, ready for execution
+%                       III. Executing
+%                       IV.  Finish executing (the same state II, might be
+%                       useful later.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 function varargout = gui(varargin)
 % GUI M-file for gui.fig
 %      GUI, by itself, creates a new GUI or raises the existing
@@ -22,7 +35,7 @@ function varargout = gui(varargin)
 
 % Edit the above text to modify the response to help gui
 
-% Last Modified by GUIDE v2.5 28-Jun-2011 05:44:07
+% Last Modified by GUIDE v2.5 29-Jun-2011 06:20:30
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -56,6 +69,16 @@ handles.output = hObject;
 
 % Update handles structure
 guidata(hObject, handles);
+
+%Set execution status
+setappdata(handles.figure1, 'executionStatus', 1);
+
+%Set the possible value range of slider 2 (which adjusts the fixed 
+%cursor inclination angle) to [0,180]
+set(handles.slider2, 'Min', 0);
+set(handles.slider2, 'Max', 180);
+set(handles.slider2, 'SliderStep', [0 1.0/179]);
+set(handles.slider2, 'Value', 90);
 
 % UIWAIT makes gui wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -91,17 +114,17 @@ debugModeForPrinting = 1;
 %%User did not select a file
 if isequal(fileName,0)
     if debugModeForPrinting
-        fprintf('User pressed cancel');
+        return;
     end;
 %User selected multiple files    
 elseif iscellstr(fileName)
     if debugModeForPrinting
-        fprintf('Multi files are selected: %s\n',fileName{:});
+        setStatus(handles,'Multiple files are selected');
     end;
 %User selected one image file
 elseif ischar(fileName)
     if debugModeForPrinting
-        fprintf('Single file selected: %s\n', fileName);
+        setStatus(handles,'Single file selected');
         %change the structure of filename to string array of size 1
         %benefit is to process the array the same as multiple files are
         %selected. Input check or different procedure is not needed.
@@ -111,13 +134,27 @@ end
 
 %Store filenames and path in application data
 setappdata(handles.figure1, 'images', [pathName fileName]);
-%Display the first selected image file on the GUI
-%Other images can be accessed by using the slider
-setDisplayedPicture(handles,1);
+
 %Set the slider's properties
 inputLength = size(fileName,2);
 
+%Store that in application data for later use
+setappdata(handles.figure1, 'inputLength', inputLength);
+
+%Display the first selected image file on the GUI
+%Other images can be accessed by using the slider
+setDisplayedImage(handles,1);
+
+%Fill the selected images listbox
+set(handles.listbox1, 'String', fileName);
+
+%Set execution status
+setappdata(handles.figure1, 'executionStatus', 2);
+
+%Set properties of the slider based on whether multiple files or single
+%file selected
 if inputLength > 1
+    set(handles.slider1,'Enable', 'on');
     set(handles.slider1,'Min',1);
     set(handles.slider1,'Max',size(fileName,2));
     set(handles.slider1,'SliderStep', [1/(size(fileName,2)-1) 0]);
@@ -135,19 +172,21 @@ function slider1_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
-%We are going to change the image displayed on the GUI,
-%according to new value of slider
-setDisplayedPicture(handles, get(hObject,'Value'));
+%Get the new index
+index = get(hObject, 'Value');
+%Change selected item in the listbox
+set(handles.listbox1, 'Value', index); 
+%Change the displayed picture
+setDisplayedImage(handles, index);
 
-function setDisplayedPicture(handles,index)
-%Input validity check
+function setDisplayedImage(handles,index)
 
+%Retrieve application data
 fileName = getappdata(handles.figure1,'images');
-inputLength = size(fileName,2);
+inputLength = getappdata(handles.figure1,'inputLength')
 pathName = fileName{1};
-%Get input length
-inputLength = inputLength - 1;
 
+%Input validity check
 if inputLength==0 || index > inputLength
     fprintf('No such image\n');
 end
@@ -158,6 +197,12 @@ axes(handles.axesIm);
 %Show the image
 imshow(I, 'Parent', handles.axesIm);
 
+function setStatus(handles, newStatus)
+set(handles.text3, 'String', newStatus);
+
+function appendStatus(handles, addedStatus)
+oldStatus = get(handles.text3, 'String');
+set(handles.text3, 'String', [oldStatus '\n' addedStatus]); 
 
 % --- Executes during object creation, after setting all properties.
 function slider1_CreateFcn(hObject, eventdata, handles)
@@ -169,28 +214,6 @@ function slider1_CreateFcn(hObject, eventdata, handles)
 if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
-
-
-% --------------------------------------------------------------------
-function Untitled_1_Callback(hObject, eventdata, handles)
-% hObject    handle to Untitled_1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function uitoggletool1_ClickedCallback(hObject, eventdata, handles)
-% hObject    handle to uitoggletool1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --------------------------------------------------------------------
-function uitoggletool2_ClickedCallback(hObject, eventdata, handles)
-% hObject    handle to uitoggletool2 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
 
 % --- Executes during object creation, after setting all properties.
 function figure1_CreateFcn(hObject, eventdata, handles)
@@ -207,4 +230,191 @@ function axes3_CreateFcn(hObject, eventdata, handles)
 
 % Hint: place code in OpeningFcn to populate axes3
 axes(hObject);
-line([0.4 0.6], [0.2 0.8], 'LineWidth', 2.8);
+%Draw the cursor default at 90 degrees
+line([0 0], [-0.5 0.5], 'LineWidth', 2.8)
+
+%Function to draw the cursor on display when inclination has changed
+function drawCursor(handles, angle)
+%Get the axes of cursor
+axes(handles.axes3);
+
+%%TODO clear the earlier cursor line
+
+%%TODO correct the angles
+% Cursor line will have length of 1 and middle point of it will be origin
+% Draw the cursor lines in two halves
+line([cos(angle/180*pi) 0], [sin(angle/180*pi) 0], 'LineWidth', 2.8);
+line([0 -cos(angle/180*pi)], [0 -sin(angle/180*pi)], 'LineWidth', 2.8);
+
+% --- Executes on button press in pushbutton1.
+function pushbutton1_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%Get the eligibility for operation
+es = getappdata(handles.figure1, 'executionStatus');
+if es == 2 % Check the top of document for execution status enumeration
+    appendStatus(handles, 'Execution started');
+end
+
+% --- Executes on key press with focus on pushbutton1 and none of its controls.
+function pushbutton1_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to pushbutton1 (see GCBO)
+% eventdata  structure with the following fields (see UICONTROL)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in radiobutton1.
+function radiobutton1_Callback(hObject, eventdata, handles)
+% hObject    handle to radiobutton1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hint: get(hObject,'Value') returns toggle state of radiobutton1
+
+
+% --- Executes on button press in radiobutton2.
+function radiobutton2_Callback(hObject, eventdata, handles)
+% hObject    handle to radiobutton2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hint: get(hObject,'Value') returns toggle state of radiobutton2
+
+
+% --- Executes on button press in radiobutton3.
+function radiobutton3_Callback(hObject, eventdata, handles)
+% hObject    handle to radiobutton3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hint: get(hObject,'Value') returns toggle state of radiobutton3
+
+
+% --- Executes on button press in radiobutton4.
+function radiobutton4_Callback(hObject, eventdata, handles)
+% hObject    handle to radiobutton4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hint: get(hObject,'Value') returns toggle state of radiobutton4
+
+
+% --- Executes on button press in radiobutton5.
+function radiobutton5_Callback(hObject, eventdata, handles)
+% hObject    handle to radiobutton5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hint: get(hObject,'Value') returns toggle state of radiobutton5
+
+
+% --- Executes on button press in radiobutton6.
+function radiobutton6_Callback(hObject, eventdata, handles)
+% hObject    handle to radiobutton6 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hint: get(hObject,'Value') returns toggle state of radiobutton6
+
+
+function edit1_Callback(hObject, eventdata, handles)
+% hObject    handle to edit1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hints: get(hObject,'String') returns contents of edit1 as text
+%        str2double(get(hObject,'String')) returns contents of edit1 as a double
+
+value = str2double(get(hObject,'String'));
+%Check the validity of entered angle value - it should be in range [0,180]
+if value >= 0 && value <=180
+    %Adjust the slider value
+    set(handles.slider2, 'Value', value);
+    %Draw the cursor
+    drawCursor(handles,value);
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function edit1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to edit1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on slider movement.
+function slider2_Callback(hObject, eventdata, handles)
+% hObject    handle to slider2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+
+%Get the new value
+value = get(hObject, 'Value')
+%Update the value in editbox
+set(handles.edit1, 'String' , num2str(value));
+
+% --- Executes during object creation, after setting all properties.
+function slider2_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to slider2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+% --- Executes on selection change in listbox1.
+function listbox1_Callback(hObject, eventdata, handles)
+% hObject    handle to listbox1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns listbox1 contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from listbox1
+
+%Get the index of selected image
+index = get(hObject, 'Value');
+%Set the image slider's value accordingly
+set(handles.slider1, 'Value', index);
+%Change the displayed image
+setDisplayedImage(handles,index)
+
+% --- Executes during object creation, after setting all properties.
+function listbox1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to listbox1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: listbox controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on key press with focus on listbox1 and none of its controls.
+function listbox1_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to listbox1 (see GCBO)
+% eventdata  structure with the following fields (see UICONTROL)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on key press with focus on slider2 and none of its controls.
+function slider2_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to slider2 (see GCBO)
+% eventdata  structure with the following fields (see UICONTROL)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
