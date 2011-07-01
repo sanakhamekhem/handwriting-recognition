@@ -35,7 +35,7 @@ function varargout = gui(varargin)
 
 % Edit the above text to modify the response to help gui
 
-% Last Modified by GUIDE v2.5 01-Jul-2011 03:57:07
+% Last Modified by GUIDE v2.5 01-Jul-2011 05:52:21
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -149,17 +149,23 @@ setDisplayedImage(handles,1);
 setappdata(handles.figure1, 'executionStatus', 2);
 
 %Fill images table
-set(handles.uitable1, 'Data', transpose(fileName));
+tableData = cell(inputLength(1), 3);
+%Set the first columns as the image file names
+tableData(:,1) = transpose(fileName);
+%Set the second column (target output) as '' so it is editable later
+%If we don't do so, edited text becomes 'nan'. Weird of MATLAB
+tableData(:,2) = {''};
+set(handles.uitable1, 'Data', tableData);
 
 %Check if target output data is available (is text.txt available on the
 %folder)
 %strPathName = cellstr(pathName);
-oldFolder = cd(pathName)
+oldFolder = cd(pathName);
 if ismember({'text.txt'},ls)
     %Read target data from text.txt
-    [targetImages correctOutput] = textread([pathName 'text.txt'],'%s %s', 'delimiter' , '|')
+    [targetImages correctOutput] = textread([pathName 'text.txt'],'%s %s', 'delimiter' , '|');
     %Fetch the correct results if available
-    updatedTable = keyUpdate(handles.uitable1, 1, targetImages, 2, correctOutput)
+    updatedTable = keyUpdate(handles.uitable1, 1, targetImages, 2, correctOutput);
 end
 %Return back to old folder
 cd(oldFolder);
@@ -301,9 +307,13 @@ cla;
 
 %%TODO correct the angles
 % Cursor line will have length of 1 and middle point of it will be origin
-% Draw the cursor lines in two halves
+% Draw the cursor line in two halves
 line([cos(angle/180*pi)*0.7 0], [sin(angle/180*pi)*0.7 0], 'LineWidth', 2.8);
 line([0 -cos(angle/180*pi)*0.7], [0 -sin(angle/180*pi)*0.7], 'LineWidth', 2.8);
+% Draw the orthogonal line to cursor line to depict the reading direction
+line([0 cos(angle/180*pi - pi/2)*0.5],[0 sin(angle/180*pi - pi/2)*0.5],'LineWidth',2.1, 'Color', 'Red');
+line([cos(angle/180*pi - pi/2)*0.5 cos(angle/180*pi - pi/2 + pi/4)*0.5],[sin(angle/180*pi - pi/2)*0.5 sin(angle/180*pi - pi/2 + pi/4)*0.5],'LineWidth',2.1, 'Color', 'Red');
+line([cos(angle/180*pi - pi/2)*0.5 cos(angle/180*pi - pi/2 - pi/4)*0.5],[sin(angle/180*pi - pi/2)*0.5 sin(angle/180*pi - pi/2 - pi/4)*0.5],'LineWidth',2.1, 'Color', 'Red');
 
 % --- Executes on button press in pushbutton1.
 function pushbutton1_Callback(hObject, eventdata, handles)
@@ -495,10 +505,19 @@ if getappdata(handles.figure1, 'executionStatus') ~= 1
     %column as editable but this may later change, hence it is better to double check 
     if index(2) == 2
         %Get the file name
-        fileName = handles.uitable1.Data{1};
-        pathName = (getappdata(handles.figure1, 'images'))(1);
+        tableData = get(handles.uitable1,'Data');
+        images = getappdata(handles.figure1, 'images');
+        pathName = images{1};
         
+        fid=fopen(sprintf('%s%s',pathName, 'text.txt'),'wt');
+        rows=size(tableData,1)
+        for i=1:rows
+            fprintf(fid,'%s|%s\n',tableData{i,1},tableData{i,2})
+        end
+
+        fclose(fid);
     end
+
 else
     set(hObject, 'Enable', 'off');
     set(handles.slider1, 'Enable', 'off');
