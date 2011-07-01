@@ -35,7 +35,7 @@ function varargout = gui(varargin)
 
 % Edit the above text to modify the response to help gui
 
-% Last Modified by GUIDE v2.5 29-Jun-2011 19:30:45
+% Last Modified by GUIDE v2.5 01-Jul-2011 03:57:07
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -145,17 +145,29 @@ setappdata(handles.figure1, 'inputLength', inputLength);
 %Other images can be accessed by using the slider
 setDisplayedImage(handles,1);
 
-%Fill the selected images listbox
-set(handles.listbox1, 'String', fileName);
-
 %Set execution status
 setappdata(handles.figure1, 'executionStatus', 2);
+
+%Fill images table
+set(handles.uitable1, 'Data', transpose(fileName));
+
+%Check if target output data is available (is text.txt available on the
+%folder)
+%strPathName = cellstr(pathName);
+oldFolder = cd(pathName)
+if ismember({'text.txt'},ls)
+    %Read target data from text.txt
+    [targetImages correctOutput] = textread([pathName 'text.txt'],'%s %s', 'delimiter' , '|')
+    %Fetch the correct results if available
+    updatedTable = keyUpdate(handles.uitable1, 1, targetImages, 2, correctOutput)
+end
+%Return back to old folder
+cd(oldFolder);
 
 %Set properties of the slider based on whether multiple files or single
 %file selected
 if inputLength > 1
     set(handles.slider1,'Enable', 'on');
-    set(handles.listbox1,'Enable', 'on');
     set(handles.slider1,'Min',1);
     set(handles.slider1,'Max',size(fileName,2));
     set(handles.slider1,'SliderStep', [1/(size(fileName,2)-1) 0]);
@@ -163,6 +175,42 @@ if inputLength > 1
 else
     set(handles.slider1, 'Enable', 'off');
 end
+
+%There is no predefined way to update single cells in matlab
+%We define our own - AND IT IS NOT TESTED AND NOT WORKING 
+function updateTableCells(tableHandle, update)
+[rows columns newData] = update;
+%Get previous table data
+tableData = get(tableHandle, 'Data');
+%Get the row and column count for processing
+[rowCount columnCount] = size(tableData); 
+%Iterate through the cells
+for i = 1 : rowCount
+    for j = 1 : columnCount
+        %If this cell is inside the list of updated cells
+        if ismember([i j], [rows columns])
+            %Update to new value
+            tableData{i,j} = newData;
+        end
+    end
+end
+
+%Update the cell of a table given a search field, search value, and content
+% and position of new data
+function tableData = keyUpdate(tableHandle, keyIndex, keys, changedField, newData)
+tableData = get(tableHandle, 'Data');
+%Get the row count
+rowCount= size(tableData, 1);
+%Search the corresponding row in the table
+for i = 1 : rowCount
+    [tf loc] = ismember(tableData{i,keyIndex},keys);
+    if tf
+        tableData{i, changedField} = newData{loc};
+    end
+end
+%Update the table using the given handle
+set(tableHandle, 'Data', tableData);
+
 
 % --- Executes on slider movement.
 function slider1_Callback(hObject, eventdata, handles)
@@ -177,8 +225,9 @@ function slider1_Callback(hObject, eventdata, handles)
 if getappdata(handles.figure1, 'executionStatus') ~= 1
     %Get the new index
     index = get(hObject, 'Value');
-    %Change selected item in the listbox
-    set(handles.listbox1, 'Value', index); 
+    %Change selected item in the uitable
+    % NOT ALLOWED IN MATLAB
+    %set(handles.listbox1, 'Value', index); 
     %Change the displayed picture
     setDisplayedImage(handles, index);
 else
@@ -190,7 +239,7 @@ function setDisplayedImage(handles,index)
 
 %Retrieve application data
 fileName = getappdata(handles.figure1,'images');
-inputLength = getappdata(handles.figure1,'inputLength')
+inputLength = getappdata(handles.figure1,'inputLength');
 pathName = fileName{1};
 
 %Input validity check
@@ -199,6 +248,8 @@ if inputLength==0 || index > inputLength
 end
 
 I = imread([pathName,fileName{index+1}]);
+%Update the resolution -- NOT VERY EFFICIENT ATM
+tableData = get(handles.uitable1, 'Data');
 %Select the axes
 axes(handles.axesIm);
 %Show the image
@@ -380,57 +431,6 @@ if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColo
     set(hObject,'BackgroundColor',[.9 .9 .9]);
 end
 
-
-% --- Executes on selection change in listbox1.
-function listbox1_Callback(hObject, eventdata, handles)
-% hObject    handle to listbox1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: contents = cellstr(get(hObject,'String')) returns listbox1 contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from listbox1
-
-%Check if images are selected
-if getappdata(handles.figure1, 'executionStatus') ~= 1
-    %Get the new index
-    index = get(hObject, 'Value');
-    %Set the image slider's value accordingly
-    set(handles.slider1, 'Value', index);
-    %Change the displayed picture
-    setDisplayedImage(handles, index);
-else
-    set(hObject, 'Enable', 'off');
-    set(handles.slider1, 'Enable', 'off');
-end
-
-%Get the index of selected image
-index = get(hObject, 'Value');
-%Change the displayed image
-setDisplayedImage(handles,index)
-
-% --- Executes during object creation, after setting all properties.
-function listbox1_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to listbox1 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: listbox controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on key press with focus on listbox1 and none of its controls.
-function listbox1_KeyPressFcn(hObject, eventdata, handles)
-% hObject    handle to listbox1 (see GCBO)
-% eventdata  structure with the following fields (see UICONTROL)
-%	Key: name of the key that was pressed, in lower case
-%	Character: character interpretation of the key(s) that was pressed
-%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
-% handles    structure with handles and user data (see GUIDATA)
-
-
 % --- Executes on key press with focus on slider2 and none of its controls.
 function slider2_KeyPressFcn(hObject, eventdata, handles)
 % hObject    handle to slider2 (see GCBO)
@@ -448,3 +448,58 @@ function togglebutton2_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of togglebutton2
+
+
+% --- Executes when selected cell(s) is changed in uitable1.
+function uitable1_CellSelectionCallback(hObject, eventdata, handles)
+% hObject    handle to uitable1 (see GCBO)
+% eventdata  structure with the following fields (see UITABLE)
+%	Indices: row and column indices of the cell(s) currently selecteds
+% handles    structure with handles and user data (see GUIDATA)
+%Check if images are selected
+if getappdata(handles.figure1, 'executionStatus') ~= 1
+    %Get the new index
+    index = eventdata.Indices(:,1);
+    %For whatever reason event is triggered twice sometimes, so we check
+    %the validity of the eventdata;
+    if isempty(index)
+        return;
+    end    
+    %Set the image slider's value accordingly
+    set(handles.slider1, 'Value', index);
+    %Change the displayed picture
+    setDisplayedImage(handles, index);
+else
+    set(hObject, 'Enable', 'off');
+    set(handles.slider1, 'Enable', 'off');
+end
+
+
+% --- Executes when entered data in editable cell(s) in uitable1.
+function uitable1_CellEditCallback(hObject, eventdata, handles)
+% hObject    handle to uitable1 (see GCBO)
+% eventdata  structure with the following fields (see UITABLE)
+%	Indices: row and column indices of the cell(s) edited
+%	PreviousData: previous data for the cell(s) edited
+%	EditData: string(s) entered by the user
+%	NewData: EditData or its converted form set on the Data property. Empty if Data was not changed
+%	Error: error string when failed to convert EditData to appropriate value for Data
+% handles    structure with handles and user data (see GUIDATA)
+
+%Check if data is loaded
+if getappdata(handles.figure1, 'executionStatus') ~= 1
+    index = eventdata.Indices;
+    %Check the edited cell, it should be correct output column that is
+    %changed. 
+    %ps: Actually we have already assured that by setting only the second 
+    %column as editable but this may later change, hence it is better to double check 
+    if index(2) == 2
+        %Get the file name
+        fileName = handles.uitable1.Data{1};
+        pathName = (getappdata(handles.figure1, 'images'))(1);
+        
+    end
+else
+    set(hObject, 'Enable', 'off');
+    set(handles.slider1, 'Enable', 'off');
+end
