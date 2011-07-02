@@ -8,6 +8,32 @@
 %                       III. Executing
 %                       IV.  Finish executing (the same state II, might be
 %                       useful later.
+%
+% Missing functionality/Possible performance improvements
+% 1) Cursor inclination change is not very optimized - too many cos and sin
+% calls - redundant operations
+% 2) There is no error measurement
+% 3) Most radiobuttons functionality missing - ie manual letter area
+% detection, only when fixed angle selected cursor angle could be modified
+% 4) recognizeText can get input as a struct which would better comply to 
+% later changes
+% 5) The main figure showing the selected image can continue including
+% ticks in x and y dimension just as before images are selected
+% 6) Naming of UIComponents (textboxes, labels, buttons) can be updated -
+% from listbox2 to lbStatusBox for example
+% 7) Reading of execution options (radiobuttons, related editboxes) should
+% be done in iteration loop, rather than pre-iteration hence if options
+% change between two consecutive images, they are reflected.
+% 8) Cursor drawing at the start should include the red orientation line
+% and arrow
+% 9) Play,rewind,forward,pause options
+%   i.Sample execution button better be replaced by play button
+%
+% OPTIONAL
+% O1) Maximized screen, check visual consistency in different resolutions
+% O2) Timestamps can be added to status bar messages
+% O3) When a status bar message is clicked, it may lead to corresponding
+% image
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -234,7 +260,7 @@ function slider1_Callback(hObject, eventdata, handles)
         setDisplayedImage(handles, index);
     else
         set(hObject, 'Enable', 'off');
-        set(handles.listbox1, 'Enable', 'off');
+        set(handles.uitable1, 'Enable', 'off');
     end
 end
 
@@ -251,8 +277,6 @@ function setDisplayedImage(handles,index)
     end
 
     I = imread([pathName,fileName{index+1}]);
-    %Update the resolution -- NOT VERY EFFICIENT ATM
-    tableData = get(handles.uitable1, 'Data');
     %Select the axes
     axes(handles.axesIm);
     %Show the image
@@ -373,7 +397,6 @@ function edit1_CreateFcn(hObject, eventdata, handles)
     end
 end
 
-
 function edit1_Callback(hObject, eventdata, handles)
     % hObject    handle to edit1 (see GCBO)
     % eventdata  reserved - to be defined in a future version of MATLAB
@@ -390,8 +413,6 @@ function edit1_Callback(hObject, eventdata, handles)
         drawCursor(handles,value);
     end
 end
-
-
 
 % --- Executes when selected cell(s) is changed in uitable1.
 function uitable1_CellSelectionCallback(hObject, eventdata, handles)
@@ -550,17 +571,6 @@ function slider2_CreateFcn(hObject, eventdata, handles)
     if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
         set(hObject,'BackgroundColor',[.9 .9 .9]);
     end
-end
-
-
-% --- Executes on selection change in listbox2.
-function listbox2_Callback(hObject, eventdata, handles)
-    % hObject    handle to listbox2 (see GCBO)
-    % eventdata  reserved - to be defined in a future version of MATLAB
-    % handles    structure with handles and user data (see GUIDATA)
-
-    % Hints: contents = cellstr(get(hObject,'String')) returns listbox2 contents as cell array
-    %        contents{get(hObject,'Value')} returns selected item from listbox2
 end
 
 % --- Executes during object creation, after setting all properties.
