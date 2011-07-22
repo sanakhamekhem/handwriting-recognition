@@ -9,14 +9,24 @@ function supervise
 %   to this file
 close all;
 clear all;
-start = 'a';
-finish = 'z';
+start = '1';
+finish = '4';
 index = 0;
+data = zeros(4,9)
 for i = start:finish
     % Prepare the image s
-    img = im2double(imread(strcat('Q', i, '.jpg')));
+    
+    %img = im2double(imread(strcat('a4.jpg')));
+    img = im2double(imread(strcat('C/c', i, '.jpg')));
     [bingrid, shape] = improcess(img(:, :, 1));
     index = index+1;
     subplot(4, 7, index);
     imshow(shape);
+    data(index,:) = bingrid(:)';
 end
+%dec2bin(bingrid)
+%data=bingrid(:)
+data = (data==0)+data
+% data1 = data(1,:)
+ data1=[1,219,4,1,360,294,66,1,411]
+hmm
