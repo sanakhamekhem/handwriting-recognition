@@ -1,0 +1,6 @@
+function [ recText ] = recognizeText( input_args )
+    %
+    pause(
+
+end
+
