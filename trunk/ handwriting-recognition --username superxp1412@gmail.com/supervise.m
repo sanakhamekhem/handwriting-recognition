@@ -17,6 +17,7 @@ for i = start:finish
     % Prepare the image s
     
     %img = im2double(imread(strcat('a4.jpg')));
+    %loading files from here
     img = im2double(imread(strcat('C/c', i, '.jpg')));
     [bingrid, shape] = improcess(img(:, :, 1));
     index = index+1;
@@ -28,5 +29,6 @@ end
 %data=bingrid(:)
 data = (data==0)+data
 % data1 = data(1,:)
+%data1 represent the test data
  data1=[1,219,4,1,360,294,66,1,411]
 hmm
