@@ -19,6 +19,8 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         line([cmax cmax], [rmax rmax-indicatorSize], 'LineWidth', 2.8, 'Color', color);
     end
 
+    function saveMatrixTo
+
 
     %Read image
     I = imread(image);
@@ -30,19 +32,37 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     %Get the boundary box which contains the actual text, cropping the
     %background part
     [rmin rmax cmin cmax croppedNegativeIm] = bbox(imopened);
-    figure(2);imshow(croppedNegativeIm);
-    figure( 3000 ), imshow( negative );
-    imcrop = (1-negative)>.1;
-    figure( 4000 ), imshow( imcrop );
-    [row col] = size( imcrop )
-
+    %Threshold the image to obtain a binary image
+    binaryIm = (1-croppedNegativeIm)>.1;
+    [row col] = size( binaryIm ); 
+    
+    %Write the binary image to a file to check the column numbers manually
+    %ie where the letters start and end, is there any overlap in neighbor
+    %letters
+    filenr=fopen('bin.txt','w');
+    for i = 1 : size(binaryIm, 1)
+        for j = 1 : size(binaryIm, 2)
+            if binaryIm(i,j) == 1
+                fprintf(filenr,'8',binaryIm(i,:));
+            else
+                fprintf(filenr,' ',binaryIm(i,:));
+            end
+        end
+        fprintf(filenr,'\n');
+    end
+    fclose(filenr);
     
     %Until we reach the end of the image, continue exhaustively to detect
     %letters
     %Start searching the new letter from the leftmost column
     newLetterStartColumn = 1;
-    while ~isEmpty(cmin)
-        [rminLetter rmaxLetter cminLetter cmaxLetter] = bboxLetter(croppedIm, newLetterStartColumn);
+    while 1
+        %Get the new letter boundary
+        [rminLetter rmaxLetter cminLetter cmaxLetter] = bboxLetter(binaryIm, newLetterStartColumn);
+        %If there are no letters left
+        if cminLetter == -1
+            break;
+        end
         %Indicate the boundary box in the image itself
         drawLetterAreaIndicators (handles,'Yellow',rmin + rminLetter, rmin + rmaxLetter, cmin + cminLetter, cmin + cmaxLetter);
         %Set the search start column to where the previous letter ended
