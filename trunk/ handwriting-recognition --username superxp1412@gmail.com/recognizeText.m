@@ -19,6 +19,23 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         line([cmax cmax], [rmax rmax-indicatorSize], 'LineWidth', 2.8, 'Color', color);
     end
 
+    %Saves binary image to txt file, 0s are written as space character and
+    %1s are written as 8s.
+    function saveMatrixToFile(matrix)
+        filenr=fopen('bin.txt','w');
+        for i = 1 : size(binaryIm, 1)
+            for j = 1 : size(binaryIm, 2)
+                if binaryIm(i,j) == 1
+                    fprintf(filenr,'8',binaryIm(i,:));
+                else
+                    fprintf(filenr,' ',binaryIm(i,:));
+                end
+            end
+            fprintf(filenr,'\n');
+        end
+        fclose(filenr);
+    end
+
 
     %Read image
     I = imread(image);
@@ -33,16 +50,12 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     %Threshold the image to obtain a binary image
     binaryIm = (1-croppedNegativeIm)>.1;
     [row col] = size( binaryIm ); 
-    %{
-    filenr=fopen('bin.txt','w');
-    for i = 1 : size(binaryIm, 1)
-        fprintf(filenr,'%d ',binaryIm(i,:));
-        fprintf(filenr,'\n');
-    end
-    fclose(filenr);
-    recText = randseq(randi(10));
-    return;
-    %}
+    
+    %Write the binary image to a file to check the column numbers manually
+    %ie where the letters start and end, is there any overlap in neighbor
+    %letters
+    saveMatrixToFile(binaryIm);
+    
     %Until we reach the end of the image, continue exhaustively to detect
     %letters
     %Start searching the new letter from the leftmost column
