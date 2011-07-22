@@ -12,6 +12,7 @@ function [rmin rmax cmin cmax cropped] = bbox(img)
 %   RMIN: vertical minimum value
 %   RMAX: vertical maximum value
 %   CROPPED: the resulting image
+
 [r c] = find(1-sign(img(:,:,1)));
 rmin = min(r);
 rmax = max(r);

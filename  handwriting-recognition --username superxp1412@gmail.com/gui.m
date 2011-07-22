@@ -533,7 +533,10 @@ function executionDelegate(handles)
         %Update the table @ui
         keyUpdate(handles.uitable1, 1, images(i+1), 3, {recognizedText});
         %and the status bar
-        appendStatus(handles, sprintf('Image %d(%d) recognized as %s', i, inputLength, recognizedText)); 
+        appendStatus(handles, sprintf('Image %d(%d) recognized as %s', i, inputLength, recognizedText));
+        %Pause for a second for user to view before continuing with another
+        %image
+        pause(1);
         if isEvaluated
         end
         if ~isContinuous
