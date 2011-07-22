@@ -11,6 +11,8 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         if indicatorSize < 3
             indicatorSize = 3;
         end
+        %Shadow the letter area
+        
         %Draw the top left indicator
         line([cmin cmin+indicatorSize], [rmin rmin], 'LineWidth', 2.8, 'Color', color);
         line([cmin cmin], [rmin rmin+indicatorSize], 'LineWidth', 2.8, 'Color', color);
