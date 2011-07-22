@@ -264,6 +264,8 @@ function slider1_Callback(hObject, eventdata, handles)
     end
 end
 
+%Specify the displayed image in the GUI, input is the index of the image
+%among all images read
 function setDisplayedImage(handles,index)
 
     %Retrieve application data
@@ -290,8 +292,8 @@ end
 function appendStatus(handles, addedStatus)
     str = cellstr(get(handles.listbox2,'String'));
     rows = size(str, 1);
-    str(2:rows+1) = str
-    str(1)= {addedStatus}
+    str(2:rows+1) = str;
+    str(1)= {addedStatus};
     set(handles.listbox2,'String', str);
 end
 
@@ -523,8 +525,11 @@ function executionDelegate(handles)
     %Call the main recognition function - message radiobutton selections
     %and image file name as input and collect recognized text as output
     for i = 1 : inputLength
+        %Set the slider value accordingly
+        set(handles.slider1, 'Value', i);
+        %View the image to be recognized
         setDisplayedImage(handles, i);
-        recognizedText = recognizeText([pathName,images{i+1}],isLADA, letterArea, imageContent,cid,cursorAngle);
+        recognizedText = recognizeText(handles,[pathName,images{i+1}],isLADA, letterArea, imageContent,cid,cursorAngle);
         %Update the table @ui
         keyUpdate(handles.uitable1, 1, images(i+1), 3, {recognizedText});
         %and the status bar
