@@ -18,10 +18,10 @@ for i = start:finish
     
     %img = im2double(imread(strcat('a4.jpg')));
     %loading files from here
-    img = im2double(imread(strcat('C/c', i, '.jpg')));
-    [bingrid, shape] = improcess(img(:, :, 1));
+    img = im2double(imread(strcat('A/a', i, '.jpg')));
+    [bingrid, shape] = improcess_m(img(:, :, 1));
     index = index+1;
-    subplot(4, 7, index);
+    subplot(3,2, index);
     imshow(shape);
     data(index,:) = bingrid(:)';
 end

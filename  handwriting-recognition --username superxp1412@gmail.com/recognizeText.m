@@ -36,7 +36,6 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         fclose(filenr);
     end
 
-
     %Read image
     I = imread(image);
     %Convert to double
