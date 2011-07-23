@@ -657,22 +657,21 @@ function btnTrain_Callback(hObject, eventdata, handles)
         %capital letters have folders named as A, B, C
         %lowercase letters have folders named as _a, _b due to case
         %insensitive nature of operating systems
-        letter_folder_name = validFolders(i,:)
+        letter_folder_name = validFolders(i,:);
         if letter_folder_name(1) == '_'
             letter = letter_folder_name(1,2);
         else
-            letter = letter_folder_name(1)
+            letter = letter_folder_name(1);
         end
         trainingData {i,3} = letter;
         
-        whos handles
-        whos folder_path
+        %Go back to source code directory so that it can call other
+        %functions
+        cd(sourceCodeDirectory);
         
         %Train the data
         trainingData {i,4} = trainData(folder_path);
         
-        %cd back to master directory just in case
-        cd('.');
     end
     %Back to source code directory
     cd(sourceCodeDirectory);
