@@ -675,7 +675,6 @@ function btnTrain_Callback(hObject, eventdata, handles)
     end
     %Back to source code directory
     cd(sourceCodeDirectory);
-    
 end
 
 % --- Executes on button press in btnClearTrn.
