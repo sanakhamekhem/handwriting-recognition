@@ -621,17 +621,31 @@ function btnTrain_Callback(hObject, eventdata, handles)
     %Get the training data folder names and trim the result because it
     %always contains . and .. for each listing
     lsm = ls;
-    trainingDataFolders = lsm(3:size(lsm), :)
-    whos trainingDataFolders 
-    trainingDataFolders(4,:)
+    trainingDataFolders = lsm(3:size(lsm), :);
+    validFolders = [];
+    index = 1;
+    %Check the validity of folder names, they should be single letter for
+    %capital letters and _x for lowercase letters.
+    for i = 1 : size(trainingDataFolders)
+        lf = trainingDataFolders(i,:);
+        if size(lf) > 2
+            continue;
+        elseif ~(isletter(lf(1)) || lf(1) == '_')
+            continue;
+        else
+            validFolders(index,:) = lf;
+            index = index + 1;
+        end
+    end
+    
     %number of different letters to be trained
-    nletter = size(trainingDataFolders);
+    nletter = size(validFolders);
     %training data consists of folder path, number of images in the folder,
     %actual letter, training results, 
     trainingData = cell(nletter, 4);
     for i = 1 : nletter
         %Concatenate the master folder path with the current folders name
-        folder_path = strcat(folder_name,'\', trainingDataFolders(i,:));
+        folder_path = strcat(folder_name,'\', validFolders(i,:));
         trainingData {i,1} = folder_path;
         
         %Go to that folder
@@ -643,7 +657,7 @@ function btnTrain_Callback(hObject, eventdata, handles)
         %capital letters have folders named as A, B, C
         %lowercase letters have folders named as _a, _b due to case
         %insensitive nature of operating systems
-        letter_folder_name = trainingDataFolders(i,:)
+        letter_folder_name = validFolders(i,:)
         if letter_folder_name(1) == '_'
             letter = letter_folder_name(1,2);
         else
@@ -651,8 +665,11 @@ function btnTrain_Callback(hObject, eventdata, handles)
         end
         trainingData {i,3} = letter;
         
+        whos handles
+        whos folder_path
+        
         %Train the data
-        %trainingData {i,4} = ;
+        trainingData {i,4} = trainData(folder_path);
         
         %cd back to master directory just in case
         cd('.');
