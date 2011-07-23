@@ -39,7 +39,7 @@ obsmat1 = mk_stochastic(rand(Q,O));
 LL
 prior2
 transmat2
-obsmat2
+obsmat2;
 
 % use model to compute log likelihood
 % data1=[1,219,4,1,360,294,66,1,411]

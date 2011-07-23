@@ -61,7 +61,7 @@ function varargout = gui(varargin)
 
     % Edit the above text to modify the response to help gui
 
-    % Last Modified by GUIDE v2.5 01-Jul-2011 22:48:02
+    % Last Modified by GUIDE v2.5 23-Jul-2011 14:37:42
 
     % Begin initialization code - DO NOT EDIT
     gui_Singleton = 1;
@@ -348,9 +348,9 @@ function drawCursor(handles, angle)
     line([cos(angle/180*pi - pi/2)*0.5 cos(angle/180*pi - pi/2 - pi/4)*0.5],[sin(angle/180*pi - pi/2)*0.5 sin(angle/180*pi - pi/2 - pi/4)*0.5],'LineWidth',2.1, 'Color', 'Red');
 end
 
-% --- Executes on button press in pushbutton1.
-function pushbutton1_Callback(hObject, eventdata, handles)
-    % hObject    handle to pushbutton1 (see GCBO)
+% --- Executes on button press in btnRecognize.
+function btnRecognize_Callback(hObject, eventdata, handles)
+    % hObject    handle to btnRecognize (see GCBO)
     % eventdata  reserved - to be defined in a future version of MATLAB
     % handles    structure with handles and user data (see GUIDATA)
 
@@ -541,9 +541,9 @@ function executionDelegate(handles)
         end
         if ~isContinuous
             %Wait for user to press the button
-            waitfor(handles.pushbutton1, 'UserData', 1);
+            waitfor(handles.btnRecognize, 'UserData', 1);
             %Set the value back to 0 -corresponds to not pressed yet-
-            set(handles.pushbutton1, 'UserData', 0);
+            set(handles.btnRecognize, 'UserData', 0);
         end
     end
     
@@ -593,3 +593,78 @@ function listbox2_CreateFcn(hObject, eventdata, handles)
     set(hObject,'BackgroundColor','white');
     end
 end 
+
+
+% --- Executes on key press with focus on btnRecognize and none of its controls.
+function btnRecognize_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to btnRecognize (see GCBO)
+% eventdata  structure with the following fields (see UICONTROL)
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
+end
+
+
+% --- Executes on button press in btnTrain.
+function btnTrain_Callback(hObject, eventdata, handles)
+    % hObject    handle to btnTrain (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+    %Store the source codes directory as we are going to navigate to
+    %training data directories
+    sourceCodeDirectory = pwd;
+    %Open dialog for user to select the training data location
+    folder_name = uigetdir(pwd,'Select training data folders');
+    %Navigate to that folder
+    cd(folder_name);
+    %Get the training data folder names and trim the result because it
+    %always contains . and .. for each listing
+    lsm = ls;
+    trainingDataFolders = lsm(3:size(lsm), :)
+    whos trainingDataFolders 
+    trainingDataFolders(4,:)
+    %number of different letters to be trained
+    nletter = size(trainingDataFolders);
+    %training data consists of folder path, number of images in the folder,
+    %actual letter, training results, 
+    trainingData = cell(nletter, 4);
+    for i = 1 : nletter
+        %Concatenate the master folder path with the current folders name
+        folder_path = strcat(folder_name,'\', trainingDataFolders(i,:));
+        trainingData {i,1} = folder_path;
+        
+        %Go to that folder
+        cd(folder_path);
+        %Get the number of images in the folder
+        trainingData {i,2} = size(ls,1)-2;
+        
+        %Get the specific letter whose data we are training atm
+        %capital letters have folders named as A, B, C
+        %lowercase letters have folders named as _a, _b due to case
+        %insensitive nature of operating systems
+        letter_folder_name = trainingDataFolders(i,:)
+        if letter_folder_name(1) == '_'
+            letter = letter_folder_name(1,2);
+        else
+            letter = letter_folder_name(1)
+        end
+        trainingData {i,3} = letter;
+        
+        %Train the data
+        %trainingData {i,4} = ;
+        
+        %cd back to master directory just in case
+        cd('.');
+    end
+    %Back to source code directory
+    cd(sourceCodeDirectory);
+    
+end
+
+% --- Executes on button press in btnClearTrn.
+function btnClearTrn_Callback(hObject, eventdata, handles)
+% hObject    handle to btnClearTrn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+end
