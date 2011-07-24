@@ -37,11 +37,11 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     end
 
     %Read image
-    I = imread(image);
+    img = imread(image);
     %Convert to double
-    I = im2double( I( :, :, 1 ) );
+    img = im2double( img( :, :, 1 ) );
     se = strel( 'disk', 1 );
-    imopened = imopen( I, se );
+    imopened = imopen( img, se );
     
     %Get the boundary box which contains the actual text, cropping the
     %background part
@@ -61,6 +61,7 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     newLetterStartColumn = 1;
     %Count the letter index starting from 1 and ending is indefinite atm
     index = 1;
+    recText = '';
     while 1
         %Get the new letter boundary
         [rminLetter rmaxLetter cminLetter cmaxLetter] = bboxLetter(binaryIm, newLetterStartColumn);
@@ -70,27 +71,29 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         end
         %Indicate the boundary box in the image itself
         drawLetterAreaIndicators (handles,'Yellow',rmin + rminLetter, rmin + rmaxLetter, cmin + cminLetter, cmin + cmaxLetter);
+        %Extract observations from the test image
+        [bingrid, ~] = improcess(img((rmin+rminLetter) : (rmin+rmaxLetter), (cmin+cminLetter):(cmin+cmaxLetter)));
         %Get hmm parameters for each model
-        [bingrid, ~] = improcess(binaryIm(rminLetter : rmaxLetter, cminLetter:cmaxLetter));
         trainingData = getappdata(handles.figure1, 'trainingData');
+        %Check the likelihood of each HMM model
         for i = 1 : size(trainingData, 1)
-            loglik(i) = dhmm_logprob(bingrid, trainingData{i,3}, trainingData{i,4}, trainingData{i,5});
+            hmmParams = trainingData{i,4};
+            loglik(i) = dhmm_logprob(bingrid, hmmParams{3}, hmmParams{4}, hmmParams{5});
+            appendStatus(handles, sprintf('Log likelihood letter is %c : %.2f', trainingData{i,3}, loglik(i)));
+        end
+        %Find which letter was most probable
+        [C,I] = max(loglik);
+        %If most probable candidate has -Inf likelihood then recognition
+        %yielded no results
+        if C == -Inf
+            recText = [recText '-'];
+            appendStatus(handles,sprintf('No suitable letter found for letter candidate %d',index));
+        else
+            recText = [recText trainingData{I,3}];
+            appendStatus(handles,sprintf('Possible candidate for letter #%d is %c', index, trainingData{I,3}));
         end
         
-        [C,I] = max(loglik);
-        if C == -Inf
-            str = cellstr(get(handles.listbox2,'String'));
-            rows = size(str, 1);
-            str(2:rows+1) = str;
-            str(1)= {sprintf('No suitable letter found for letter candidate %d',index)};
-            set(handles.listbox2,'String', str);
-        else
-            str = cellstr(get(handles.listbox2,'String'));
-            rows = size(str, 1);
-            str(2:rows+1) = str;
-            str(1)= {sprintf('Possible candidate for letter #%d is %c', index, trainingData{I} )};
-            set(handles.listbox2,'String', str);
-        end
+        pause(0.5);
         
         %Set the search start column to where the previous letter ended
         newLetterStartColumn = cmaxLetter + 1;
@@ -102,5 +105,4 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
             break;
         end
     end
-    recText = randseq(randi(10));
 end
