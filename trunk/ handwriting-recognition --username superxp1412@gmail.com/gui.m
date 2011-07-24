@@ -290,13 +290,6 @@ function setStatus(handles, newStatus)
     set(handles.listbox2, 'String', newStatus);
 end
 
-function appendStatus(handles, addedStatus)
-    str = cellstr(get(handles.listbox2,'String'));
-    rows = size(str, 1);
-    str(2:rows+1) = str;
-    str(1)= {addedStatus};
-    set(handles.listbox2,'String', str);
-end
 
 % --- Executes during object creation, after setting all properties.
 function slider1_CreateFcn(hObject, eventdata, handles)
@@ -678,7 +671,7 @@ function btnTrain_Callback(hObject, eventdata, handles)
         trainingData {i,4} = trainData(handles,folder_path);
         
         %Pause for users to view
-        pause(1);
+        pause(0.5);
         %Then clear the axes
         %set(handles.uipanel7, 'Children', []);
         

@@ -37,11 +37,11 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     end
 
     %Read image
-    I = imread(image);
+    img = imread(image);
     %Convert to double
-    I = im2double( I( :, :, 1 ) );
+    img = im2double( img( :, :, 1 ) );
     se = strel( 'disk', 1 );
-    imopened = imopen( I, se );
+    imopened = imopen( img, se );
     
     %Get the boundary box which contains the actual text, cropping the
     %background part
@@ -59,6 +59,8 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     %letters
     %Start searching the new letter from the leftmost column
     newLetterStartColumn = 1;
+    %Count the letter index starting from 1 and ending is indefinite atm
+    index = 1;
     while 1
         %Get the new letter boundary
         [rminLetter rmaxLetter cminLetter cmaxLetter] = bboxLetter(binaryIm, newLetterStartColumn);
@@ -69,13 +71,25 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         %Indicate the boundary box in the image itself
         drawLetterAreaIndicators (handles,'Yellow',rmin + rminLetter, rmin + rmaxLetter, cmin + cminLetter, cmin + cmaxLetter);
         %Get hmm parameters for each model
-        [bingrid, ~] = improcess(binaryIm((rmin + rminLetter) : (rmin + rmaxLetter), (cmin + cminLetter):(cmin + cmaxLetter)));
+        [bingrid, ~] = improcess(img((rmin+rminLetter) : (rmin+rmaxLetter), (cmin+cminLetter):(cmin+cmaxLetter)));
         trainingData = getappdata(handles.figure1, 'trainingData');
         for i = 1 : size(trainingData, 1)
-            loglik = dhmm_logprob(bingrid, trainingData{i,3}, trainingData{i,4}, trainingData{5});
+            hmmParams = trainingData{i,4};
+            loglik(i) = dhmm_logprob(bingrid, hmmParams{3}, hmmParams{4}, hmmParams{5});
+            appendStatus(handles, sprintf('Log likelihood letter is %c : %.2f'));
         end
+        
+        [C,I] = max(loglik);
+        if C == -Inf
+            appendStatus(handles,sprintf('No suitable letter found for letter candidate %d',index));
+        else
+            appendStatus(handles,sprintf('Possible candidate for letter #%d is %c', index, trainingData{I,3}));
+        end
+        
         %Set the search start column to where the previous letter ended
         newLetterStartColumn = cmaxLetter + 1;
+        %Increment the letter count
+        index = index + 1;
         %If the previous letter ended at the right border of the image
         %Or in other words if it was the last letter in the image
         if newLetterStartColumn > cmax
