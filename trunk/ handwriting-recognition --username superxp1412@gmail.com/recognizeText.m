@@ -59,6 +59,8 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     %letters
     %Start searching the new letter from the leftmost column
     newLetterStartColumn = 1;
+    %Count the letter index starting from 1 and ending is indefinite atm
+    index = 1;
     while 1
         %Get the new letter boundary
         [rminLetter rmaxLetter cminLetter cmaxLetter] = bboxLetter(binaryIm, newLetterStartColumn);
@@ -68,13 +70,37 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         end
         %Indicate the boundary box in the image itself
         drawLetterAreaIndicators (handles,'Yellow',rmin + rminLetter, rmin + rmaxLetter, cmin + cminLetter, cmin + cmaxLetter);
+        %Get hmm parameters for each model
+        [bingrid, ~] = improcess(binaryIm(rminLetter : rmaxLetter, cminLetter:cmaxLetter));
+        trainingData = getappdata(handles.figure1, 'trainingData');
+        for i = 1 : size(trainingData, 1)
+            loglik(i) = dhmm_logprob(bingrid, trainingData{i,3}, trainingData{i,4}, trainingData{i,5});
+        end
+        
+        [C,I] = max(loglik);
+        if C == -Inf
+            str = cellstr(get(handles.listbox2,'String'));
+            rows = size(str, 1);
+            str(2:rows+1) = str;
+            str(1)= {sprintf('No suitable letter found for letter candidate %d',index)};
+            set(handles.listbox2,'String', str);
+        else
+            str = cellstr(get(handles.listbox2,'String'));
+            rows = size(str, 1);
+            str(2:rows+1) = str;
+            str(1)= {sprintf('Possible candidate for letter #%d is %c', index, trainingData{I} )};
+            set(handles.listbox2,'String', str);
+        end
+        
         %Set the search start column to where the previous letter ended
         newLetterStartColumn = cmaxLetter + 1;
+        %Increment the letter count
+        index = index + 1;
         %If the previous letter ended at the right border of the image
         %Or in other words if it was the last letter in the image
         if newLetterStartColumn > cmax
             break;
         end
-    end    
+    end
     recText = randseq(randi(10));
 end

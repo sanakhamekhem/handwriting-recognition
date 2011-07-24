@@ -1,4 +1,4 @@
-function  [training_result] = trainData(folder_path)
+function  [ hmmParam ] = trainData(handles,folder_path)
     %Get the source code folder
     sourceCodeDirectory = pwd;
     %Go to training data's folder
@@ -8,6 +8,8 @@ function  [training_result] = trainData(folder_path)
     trainingImages = lsm(3:size(lsm), :);
     validImages = [];
     index = 1;
+    %Get the valid images among all files in the folder (ie exclude .svn
+    %file etc)
     for i = 1 : size(trainingImages)
         lf = trainingImages(i,:);
         if  lf(1) == '.'
@@ -26,28 +28,27 @@ function  [training_result] = trainData(folder_path)
     %Allocate the storage for training result
     training_result = zeros(nimages,9);
     index = 1;
-    %figure to show segmented letters
-    figure('Name', 'Segmented Letters');
     %Number of rows in the plot, there will be three different images in
     %each of them
     plotRows = ceil(nimages/3);
+    %Create a new panel to draw the letter feature extraction results
+    axes(handles.axesIm);
+    %figure to show segmented letters
+    %figure('Name', 'Segmented Letters');
     %Iterate through images
     for i = 1 : nimages
         %Read the image
         img = im2double(imread(strcat(folder_path,'\', validImages(i,:))));
         %Process the image (trim the white spaces, segment it and compute bingrid
         [bingrid, shape] = improcess(img(:, :, 1));
-        subplot(plotRows,3, index);
+        subplot(plotRows,3, index,'Parent',handles.uipanel7);
         index = index+1;
         imshow(shape);
         training_result(index,:) = bingrid(:)';
     end
     training_result = (training_result==0)+training_result;
-    %{
-    %data1 represent the test data
-     data1=[1,219,4,1,360,294,66,1,411]
-    hmm
-    %}
-
+    %Train HMM according to training results we have achieved
+    [ M, N, prior, transmat, obsmat ] = trainHMM (training_result);
+    hmmParam = {M, N, prior, transmat, obsmat};
 end
 
