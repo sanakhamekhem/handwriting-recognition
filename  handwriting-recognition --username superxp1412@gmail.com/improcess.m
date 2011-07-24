@@ -55,3 +55,4 @@ for i = 1:NSEGR
         end
     end
 end
+bingrid = (bingrid==0)+bingrid;

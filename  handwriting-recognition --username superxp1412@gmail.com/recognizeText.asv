@@ -19,8 +19,22 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         line([cmax cmax], [rmax rmax-indicatorSize], 'LineWidth', 2.8, 'Color', color);
     end
 
-    function saveMatrixTo
-
+    %Saves binary image to txt file, 0s are written as space character and
+    %1s are written as 8s.
+    function saveMatrixToFile(matrix)
+        filenr=fopen('bin.txt','w');
+        for i = 1 : size(binaryIm, 1)
+            for j = 1 : size(binaryIm, 2)
+                if binaryIm(i,j) == 1
+                    fprintf(filenr,'8',binaryIm(i,:));
+                else
+                    fprintf(filenr,' ',binaryIm(i,:));
+                end
+            end
+            fprintf(filenr,'\n');
+        end
+        fclose(filenr);
+    end
 
     %Read image
     I = imread(image);
@@ -39,18 +53,7 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     %Write the binary image to a file to check the column numbers manually
     %ie where the letters start and end, is there any overlap in neighbor
     %letters
-    filenr=fopen('bin.txt','w');
-    for i = 1 : size(binaryIm, 1)
-        for j = 1 : size(binaryIm, 2)
-            if binaryIm(i,j) == 1
-                fprintf(filenr,'8',binaryIm(i,:));
-            else
-                fprintf(filenr,' ',binaryIm(i,:));
-            end
-        end
-        fprintf(filenr,'\n');
-    end
-    fclose(filenr);
+    saveMatrixToFile(binaryIm);
     
     %Until we reach the end of the image, continue exhaustively to detect
     %letters
@@ -65,6 +68,12 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         end
         %Indicate the boundary box in the image itself
         drawLetterAreaIndicators (handles,'Yellow',rmin + rminLetter, rmin + rmaxLetter, cmin + cminLetter, cmin + cmaxLetter);
+        %Get hmm parameters for each model
+        [bingrid, ~] = improcess(binaryIm((rmin + rminLetter) : (rmin + rmaxLetter), (cmin + cminLetter):(cmin + cmaxLetter)));
+        trainingData = getappdata(handles.figure1, 'trainingData');
+        for i = 1 : size(trainingData, 1)
+            loglik = dhmm_logprob(bingrid, trainingData{i,3}, trainingData{i,4}, trainingData{5});
+        end
         %Set the search start column to where the previous letter ended
         newLetterStartColumn = cmaxLetter + 1;
         %If the previous letter ended at the right border of the image
@@ -72,6 +81,6 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         if newLetterStartColumn > cmax
             break;
         end
-    end    
+    end
     recText = randseq(randi(10));
 end

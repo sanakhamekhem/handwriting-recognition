@@ -8,6 +8,7 @@
 %                       III. Executing
 %                       IV.  Finish executing (the same state II, might be
 %                       useful later.
+% 4) trainingData - extracted observations from the training data
 %
 % Missing functionality/Possible performance improvements
 % 1) Cursor inclination change is not very optimized - too many cos and sin
@@ -61,7 +62,7 @@ function varargout = gui(varargin)
 
     % Edit the above text to modify the response to help gui
 
-    % Last Modified by GUIDE v2.5 23-Jul-2011 14:37:42
+    % Last Modified by GUIDE v2.5 24-Jul-2011 03:08:17
 
     % Begin initialization code - DO NOT EDIT
     gui_Singleton = 1;
@@ -643,6 +644,10 @@ function btnTrain_Callback(hObject, eventdata, handles)
     %training data consists of folder path, number of images in the folder,
     %actual letter, training results, 
     trainingData = cell(nletter, 4);
+    %Hide the axes for test images and show the uipanel for subplot of
+    %training images
+    set(handles.axesIm, 'Visible', 'off');
+    set(handles.uipanel7, 'Visible', 'on');
     for i = 1 : nletter
         %Concatenate the master folder path with the current folders name
         folder_path = strcat(folder_name,'\', validFolders(i,:));
@@ -670,16 +675,33 @@ function btnTrain_Callback(hObject, eventdata, handles)
         cd(sourceCodeDirectory);
         
         %Train the data
-        trainingData {i,4} = trainData(folder_path);
+        trainingData {i,4} = trainData(handles,folder_path);
+        
+        %Pause for users to view
+        pause(1);
+        %Then clear the axes
+        %set(handles.uipanel7, 'Children', []);
         
     end
     %Back to source code directory
     cd(sourceCodeDirectory);
+    %Display the axes for test images which was hidden before and hide the
+    %uipanel7 which was used to show training data segmentation results
+    set(handles.axesIm, 'Visible', 'on');
+    set(handles.uipanel7, 'Visible', 'off');
+    
+    %Store the training data observations for later use in HMM
+    setappdata(handles.figure1, 'trainingData', trainingData);
+    
 end
 
 % --- Executes on button press in btnClearTrn.
 function btnClearTrn_Callback(hObject, eventdata, handles)
-% hObject    handle to btnClearTrn (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+    % hObject    handle to btnClearTrn (see GCBO)
+    % eventdata  reserved - to be defined in a future version of MATLAB
+    % handles    structure with handles and user data (see GUIDATA)
+    
+    %Clear the training data
+    setappdata(handles.figure1, 'trainingData', []);
+
 end
