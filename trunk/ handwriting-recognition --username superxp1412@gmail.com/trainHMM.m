@@ -1,7 +1,7 @@
 function [ O, Q ,prior, transmat, obsmat ] = trainHMM( data )
 %O & Q represent observation numbers and number of states
-O=9;
-Q=9;
+O=10;
+Q=6;
 % initial random guess of parameters
 prior1 = normalise(rand(Q,1));
 transmat1=mk_stochastic(rand(Q,Q));
