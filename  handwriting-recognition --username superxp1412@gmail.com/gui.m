@@ -673,7 +673,7 @@ function btnTrain_Callback(hObject, eventdata, handles)
         %Pause for users to view
         pause(0.5);
         %Then clear the axes
-        %set(handles.uipanel7, 'Children', []);
+        delete(get(handles.uipanel7, 'Children'));
         
     end
     %Back to source code directory
