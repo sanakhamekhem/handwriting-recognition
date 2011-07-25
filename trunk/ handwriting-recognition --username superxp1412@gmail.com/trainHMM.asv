@@ -1,6 +1,6 @@
 function [ O, Q ,prior, transmat, obsmat ] = trainHMM( data )
 %O & Q represent observation numbers and number of states
-O=9;
+O=20;
 Q=9;
 % initial random guess of parameters
 prior1 = normalise(rand(Q,1));

@@ -1,4 +1,4 @@
-function [rmin rmax cmin cmax] = bboxletter(img, startColumn)
+function [rmin rmax cmin cmax cropped] = bboxletter(img, startColumn)
 %BBOX(IMG,TYPE)
 %   Given a binary image containing text returns the boundary of the first
 %   letter which is located right to the startColumn
@@ -21,6 +21,7 @@ cmin = -1;
 cmax = -1;
 rmin = -1;
 rmax = -1;
+cropped = [];
 
 %Get image width
 imWidth = size(img,2);
@@ -52,3 +53,5 @@ end
 [r ~] = find(img(:,cmin:cmax));
 rmin = min(r);
 rmax = max(r);
+
+cropped = img(rmin:rmax,cmin:cmax);

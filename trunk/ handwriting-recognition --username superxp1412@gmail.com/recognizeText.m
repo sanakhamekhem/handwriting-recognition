@@ -40,12 +40,10 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     img = imread(image);
     %Convert to double
     img = im2double( img( :, :, 1 ) );
-    se = strel( 'disk', 1 );
-    imopened = imopen( img, se );
     
     %Get the boundary box which contains the actual text, cropping the
     %background part
-    [rmin rmax cmin cmax croppedNegativeIm] = bbox(imopened);
+    [rmin rmax cmin cmax croppedNegativeIm] = bbox(img);
     %Threshold the image to obtain a binary image
     binaryIm = (1-croppedNegativeIm)>.1;
     [row col] = size( binaryIm ); 
@@ -53,7 +51,7 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     %Write the binary image to a file to check the column numbers manually
     %ie where the letters start and end, is there any overlap in neighbor
     %letters
-    saveMatrixToFile(binaryIm);
+    %saveMatrixToFile(binaryIm);
     
     %Until we reach the end of the image, continue exhaustively to detect
     %letters
@@ -64,7 +62,7 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     recText = '';
     while 1
         %Get the new letter boundary
-        [rminLetter rmaxLetter cminLetter cmaxLetter] = bboxLetter(binaryIm, newLetterStartColumn);
+        [rminLetter, rmaxLetter, cminLetter, cmaxLetter, cropped] = bboxLetter(binaryIm, newLetterStartColumn);
         %If there are no letters left
         if cminLetter == -1
             break;
@@ -73,12 +71,13 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         drawLetterAreaIndicators (handles,'Yellow',rmin + rminLetter, rmin + rmaxLetter, cmin + cminLetter, cmin + cmaxLetter);
         %Extract observations from the test image
         [bingrid, ~] = improcess(img((rmin+rminLetter) : (rmin+rmaxLetter), (cmin+cminLetter):(cmin+cmaxLetter)));
+        bingrid(:)'
         %Get hmm parameters for each model
         trainingData = getappdata(handles.figure1, 'trainingData');
         %Check the likelihood of each HMM model
         for i = 1 : size(trainingData, 1)
             hmmParams = trainingData{i,4};
-            loglik(i) = dhmm_logprob(bingrid, hmmParams{3}, hmmParams{4}, hmmParams{5});
+            loglik(i) = dhmm_logprob(bingrid(:)', hmmParams{3}, hmmParams{4}, hmmParams{5});
             appendStatus(handles, sprintf('Log likelihood letter is %c : %.2f', trainingData{i,3}, loglik(i)));
         end
         %Find which letter was most probable
