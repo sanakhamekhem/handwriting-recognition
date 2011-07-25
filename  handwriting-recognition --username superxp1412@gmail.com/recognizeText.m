@@ -69,15 +69,17 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         end
         %Indicate the boundary box in the image itself
         drawLetterAreaIndicators (handles,'Yellow',rmin + rminLetter, rmin + rmaxLetter, cmin + cminLetter, cmin + cmaxLetter);
+        %OBSOLETE Method to extract observation
         %Extract observations from the test image
-        [bingrid, ~] = improcess(img((rmin+rminLetter) : (rmin+rmaxLetter), (cmin+cminLetter):(cmin+cmaxLetter)));
-        bingrid(:)'
+        %[bingrid, ~] = improcess(img((rmin+rminLetter) : (rmin+rmaxLetter), (cmin+cminLetter):(cmin+cmaxLetter)));
+        %bingrid(:)'
+        observations = count_segments(img((rmin+rminLetter) : (rmin+rmaxLetter), (cmin+cminLetter):(cmin+cmaxLetter)),0);
         %Get hmm parameters for each model
         trainingData = getappdata(handles.figure1, 'trainingData');
         %Check the likelihood of each HMM model
         for i = 1 : size(trainingData, 1)
             hmmParams = trainingData{i,4};
-            loglik(i) = dhmm_logprob(bingrid(:)', hmmParams{3}, hmmParams{4}, hmmParams{5});
+            loglik(i) = dhmm_logprob(observations, hmmParams{3}, hmmParams{4}, hmmParams{5});
             appendStatus(handles, sprintf('Log likelihood letter is %c : %.2f', trainingData{i,3}, loglik(i)));
         end
         %Find which letter was most probable

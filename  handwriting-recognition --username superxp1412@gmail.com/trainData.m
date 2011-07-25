@@ -1,4 +1,5 @@
 function  [ hmmParam ] = trainData(handles,folder_path)
+    
     %Get the source code folder
     sourceCodeDirectory = pwd;
     %Go to training data's folder
@@ -26,7 +27,7 @@ function  [ hmmParam ] = trainData(handles,folder_path)
     %Get the number of images
     nimages = size(validImages,1);
     %Allocate the storage for training result
-    training_result = zeros(nimages,9);
+    training_result = zeros(nimages,6);
     index = 1;
     %Number of rows in the plot, there will be three different images in
     %each of them
@@ -39,14 +40,20 @@ function  [ hmmParam ] = trainData(handles,folder_path)
     for i = 1 : nimages
         %Read the image
         img = im2double(imread(strcat(folder_path,'\', validImages(i,:))));
-        %Process the image (trim the white spaces, segment it and compute bingrid
-        [bingrid, shape] = improcess(img(:, :, 1));
-        subplot(plotRows,3, index,'Parent',handles.uipanel7);
-        imshow(shape);
-        training_result(index,:) = bingrid(:)';
+        %OBSOLETE
+        %Process the image (trim the white spaces, segment it and compute
+        %bingrid
+        %[bingrid, shape] = improcess(img(:, :, 1));
+        h = subplot(plotRows,3, index,'Parent',handles.uipanel7);
+        observations = count_segments(img,1);
+        %imshowSlicedImageWithHighlightedLines(h, img)
+        %imshow(shape);
+        training_result(index,:) = observations(:);
         index = index+1;
     end
-    training_result = (training_result==0)+training_result
+    %OBSOLETE
+    %training_result = (training_result==0)+training_result
+    training_result
     %Train HMM according to training results we have achieved
     [ M, N, prior, transmat, obsmat ] = trainHMM (training_result);
     hmmParam = {M, N, prior, transmat, obsmat};
