@@ -22,7 +22,7 @@ THETA = .1;
 % % se = strel( 'disk', 1 );
 % % imopened = imopen( im, se );
 % % imedge = im2double( edge( im,'Canny' ) );
-[~, ~, ~, ~, negative] = bbox( rawim );
+[~, ~, ~, ~, negative] = bbox( rawim);
 imcrop = (1-negative)>THETA;
 [row col] = size( imcrop );
 rowdepo = mod( row, NRGRID );
@@ -49,7 +49,7 @@ for i = 1:NSEGR
                 shape( ( i-1 )*NRGRID+k,( j-1 )*NCGRID+l ) = ...
                     ( sum( sum( imcrop( fstrow:lstrow, fstcol:lstcol ) ) )...
                     /maparea > THRESH );
-                bingrid( i, j ) = bingrid( i, j )*2+...
+                bingrid( i, j ) = bingrid( i, j )+...
                     shape( ( i-1 )*NRGRID+k,( j-1 )*NCGRID+l );
             end
         end

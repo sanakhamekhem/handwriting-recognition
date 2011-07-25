@@ -42,11 +42,11 @@ function  [ hmmParam ] = trainData(handles,folder_path)
         %Process the image (trim the white spaces, segment it and compute bingrid
         [bingrid, shape] = improcess(img(:, :, 1));
         subplot(plotRows,3, index,'Parent',handles.uipanel7);
-        index = index+1;
         imshow(shape);
         training_result(index,:) = bingrid(:)';
+        index = index+1;
     end
-    training_result = (training_result==0)+training_result;
+    training_result = (training_result==0)+training_result
     %Train HMM according to training results we have achieved
     [ M, N, prior, transmat, obsmat ] = trainHMM (training_result);
     hmmParam = {M, N, prior, transmat, obsmat};
