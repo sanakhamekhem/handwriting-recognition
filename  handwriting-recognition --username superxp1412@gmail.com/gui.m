@@ -3,10 +3,12 @@
 % 1) images = [pathName fileName] - name of the directory, followed by the
 % names of image file names
 % 2) inputLength - length of the selected images
-% 3) executionStatus -  I.   Waiting for images to be selected
-%                       II.  Images selected, ready for execution
-%                       III. Executing
-%                       IV.  Finish executing (the same state II, might be
+% 3) executionStatus -  I.   Waiting for training data
+%                       II. Training
+%                       III. Trained
+%                       IV.  Images selected, ready for execution
+%                       V. Recognizing
+%                       VI.  Finish executing (the same state II, might be
 %                       useful later.
 % 4) trainingData - extracted observations from the training data
 %
@@ -166,8 +168,12 @@ function uipushtool1_ClickedCallback(hObject, eventdata, handles)
     %Other images can be accessed by using the slider
     setDisplayedImage(handles,1);
 
-    %Set execution status
-    setappdata(handles.figure1, 'executionStatus', 2);
+    %Get execution status
+    execStat = getappdata(handles.figure1, 'executionStatus');
+    if execStat == 3
+        %Set execution status
+        setappdata(handles.figure1, 'executionStatus', 4);
+    end
 
     %Fill images table
     tableData = cell(inputLength(1), 3);
@@ -251,7 +257,7 @@ function slider1_Callback(hObject, eventdata, handles)
     %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
     %Check if images are selected
-    if getappdata(handles.figure1, 'executionStatus') ~= 1
+    if sum(getappdata(handles.figure1, 'executionStatus') == [4 6])
         %Get the new index
         index = get(hObject, 'Value');
         %Change selected item in the uitable
@@ -350,15 +356,18 @@ function btnRecognize_Callback(hObject, eventdata, handles)
 
     %Get the eligibility for operation
     es = getappdata(handles.figure1, 'executionStatus');
-    if es == 2 % Check the top of document for execution status enumeration
+    if es == 3 %Training completed, but no test image selected, 
+               %open the dialog for selecting test images
+        uipushtool1_ClickedCallback(hObject, eventdata, handles);
+    elseif es == 4 %Test images selected now recognizing
         set(hObject, 'UserData', 0);
         appendStatus(handles, 'Execution started');
         executionDelegate(handles);
-    elseif es == 3 
+    elseif es == 5 
         % Operation in process, user pressed the button to continue 
         % with the next image
         set(hObject, 'UserData', 1);
-    elseif es == 4
+    elseif es == 6
         %One pass through selected images is finished and we are starting a new
         %one
         clearGUIFromPreviousData(handles);
@@ -417,7 +426,7 @@ function uitable1_CellSelectionCallback(hObject, eventdata, handles)
     %	Indices: row and column indices of the cell(s) currently selecteds
     % handles    structure with handles and user data (see GUIDATA)
     %Check if images are selected
-    if getappdata(handles.figure1, 'executionStatus') ~= 1
+    if sum(getappdata(handles.figure1, 'executionStatus') == [4 6])
         %Get the new index
         index = eventdata.Indices(:,1);
         %For whatever reason event is triggered twice sometimes, so we check
@@ -448,7 +457,7 @@ function uitable1_CellEditCallback(hObject, eventdata, handles)
     % handles    structure with handles and user data (see GUIDATA)
 
     %Check if data is loaded
-    if getappdata(handles.figure1, 'executionStatus') ~= 1
+    if sum(getappdata(handles.figure1, 'executionStatus') == [4 6])
         index = eventdata.Indices;
         %Check the edited cell, it should be correct output column that is
         %changed. 
@@ -512,7 +521,7 @@ function executionDelegate(handles)
     isEvaluated = get(handles.radiobutton16, 'Value');
     
     %Set execution status to 'operating now'
-    setappdata(handles.figure1, 'executionStatus', 3);
+    setappdata(handles.figure1, 'executionStatus', 5);
     inputLength = getappdata(handles.figure1, 'inputLength');
     images = getappdata(handles.figure1, 'images');
     pathName = images{1};
@@ -542,7 +551,7 @@ function executionDelegate(handles)
     end
     
     %Set execution status to finished 
-    setappdata(handles.figure1, 'executionStatus', 4);
+    setappdata(handles.figure1, 'executionStatus', 6);
     %and update the status bar
     appendStatus(handles,'Recognition process completed');
 end
@@ -584,7 +593,7 @@ function listbox2_CreateFcn(hObject, eventdata, handles)
     % Hint: listbox controls usually have a white background on Windows.
     %       See ISPC and COMPUTER.
     if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+        set(hObject,'BackgroundColor','white');
     end
 end 
 
@@ -610,6 +619,10 @@ function btnTrain_Callback(hObject, eventdata, handles)
     sourceCodeDirectory = pwd;
     %Open dialog for user to select the training data location
     folder_name = uigetdir(pwd,'Select training data folders');
+    %Check if user pressed cancel or selected a folder
+    if isequal(folder_name,0)
+        return;
+    end
     %Navigate to that folder
     cd(folder_name);
     %Get the training data folder names and trim the result because it
@@ -641,6 +654,8 @@ function btnTrain_Callback(hObject, eventdata, handles)
     %training images
     set(handles.axesIm, 'Visible', 'off');
     set(handles.uipanel7, 'Visible', 'on');
+    %Set execution status to currently training
+    setappdata(handles.figure1, 'executionStatus', 2);
     for i = 1 : nletter
         %Concatenate the master folder path with the current folders name
         folder_path = strcat(folder_name,'\', validFolders(i,:));
@@ -683,6 +698,15 @@ function btnTrain_Callback(hObject, eventdata, handles)
     set(handles.axesIm, 'Visible', 'on');
     set(handles.uipanel7, 'Visible', 'off');
     
+    %Set execution status to training done
+    %Check if test images were already selected before training if so set
+    %the status to eligible for recognition, else set it to waiting for
+    %test images
+    if getappdata(handles.figure1, 'inputLength') ~= 0
+        setappdata(handles.figure1, 'executionStatus', 4);
+    else
+        setappdata(handles.figure1, 'executionStatus', 3);
+    end
     %Store the training data observations for later use in HMM
     setappdata(handles.figure1, 'trainingData', trainingData);
     
@@ -696,5 +720,7 @@ function btnClearTrn_Callback(hObject, eventdata, handles)
     
     %Clear the training data
     setappdata(handles.figure1, 'trainingData', []);
+    %Set the execution status to waiting for training data
+    setappdata(handles.figure1, 'executionStatus', 1);
 
 end
