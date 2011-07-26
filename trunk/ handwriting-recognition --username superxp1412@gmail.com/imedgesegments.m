@@ -18,5 +18,6 @@
             h = text(col+1, row-1, num2str(L(row,col)));
             set(h,'Color',colors(cidx),'FontSize',14,'FontWeight','bold');
         end
+        hold off;
     end
     
