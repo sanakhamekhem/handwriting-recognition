@@ -64,7 +64,7 @@ function varargout = gui(varargin)
 
     % Edit the above text to modify the response to help gui
 
-    % Last Modified by GUIDE v2.5 24-Jul-2011 03:08:17
+    % Last Modified by GUIDE v2.5 26-Jul-2011 20:30:51
 
     % Begin initialization code - DO NOT EDIT
     gui_Singleton = 1;
@@ -112,8 +112,8 @@ function gui_OpeningFcn(hObject, eventdata, handles, varargin)
     
     setStatus(handles, {'No images selected yet'});
 
-    % UIWAIT makes gui wait for user response (see UIRESUME)
-    % uiwait(handles.figure1);
+    %Draw the cursor default at 90 degrees
+    drawCursor(handles, 90);
 end
 
 % --- Outputs from this function are returned to the command line.
@@ -271,10 +271,9 @@ function slider1_Callback(hObject, eventdata, handles)
     end
 end
 
-%Specify the displayed image in the GUI, input is the index of the image
-%among all images read
-function setDisplayedImage(handles,index)
-
+%Images are not stored directly in the GUI, but rather their path. This
+%function returns the image itself on the specified index
+function [img] = getImageAt(handles, index)
     %Retrieve application data
     fileName = getappdata(handles.figure1,'images');
     inputLength = getappdata(handles.figure1,'inputLength');
@@ -283,9 +282,21 @@ function setDisplayedImage(handles,index)
     %Input validity check
     if inputLength==0 || index > inputLength
         fprintf('No such image\n');
+        img = [];
+        return;
     end
 
-    I = imread([pathName,fileName{index+1}]);
+    img = imread([pathName,fileName{index+1}]);
+end
+
+%Specify the displayed image in the GUI, input is the index of the image
+%among all images read
+function setDisplayedImage(handles,index)
+    %Get the image on the specified index
+    [I] = getImageAt(handles,index);
+    if isempty(I)
+        return;
+    end
     %Select the axes
     axes(handles.axesIm);
     %Show the image
@@ -307,25 +318,6 @@ function slider1_CreateFcn(hObject, eventdata, handles)
     if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
         set(hObject,'BackgroundColor',[.9 .9 .9]);
     end
-end
-
-% --- Executes during object creation, after setting all properties.
-function figure1_CreateFcn(hObject, eventdata, handles)
-    % hObject    handle to figure1 (see GCBO)
-    % eventdata  reserved - to be defined in a future version of MATLAB
-    % handles    empty - handles not created until after all CreateFcns called
-end
-
-% --- Executes during object creation, after setting all properties.
-function axes3_CreateFcn(hObject, eventdata, handles)
-    % hObject    handle to axes3 (see GCBO)
-    % eventdata  reserved - to be defined in a future version of MATLAB
-    % handles    empty - handles not created until after all CreateFcns called
-
-    % Hint: place code in OpeningFcn to populate axes3
-    axes(hObject);
-    %Draw the cursor default at 90 degrees
-    line([0 0], [-0.7 0.7], 'LineWidth', 2.8)
 end
 
 %Function to draw the cursor on display when inclination has changed
@@ -370,18 +362,18 @@ function btnRecognize_Callback(hObject, eventdata, handles)
     elseif es == 6
         %One pass through selected images is finished and we are starting a new
         %one
-        clearGUIFromPreviousData(handles);
+        clearImagesTableFromPreviousData(handles);
         %Update the status bar
         appendStatus(handles, '');
         appendStatus(handles, 'Previously selected images and options retained');
         appendStatus(handles, 'Execution started');
         %Set the status back to image selected
-        setappdata(handles.figure1, 'executionStatus', 2);
+        setappdata(handles.figure1, 'executionStatus', 4);
         executionDelegate(handles);
     end
 end
 
-function clearGUIFromPreviousData(handles)
+function clearImagesTableFromPreviousData(handles)
     %Clear recognized field of the uitable
     tableData = get(handles.uitable1, 'Data');
     tableData(:,3) = {''};
@@ -597,18 +589,6 @@ function listbox2_CreateFcn(hObject, eventdata, handles)
     end
 end 
 
-
-% --- Executes on key press with focus on btnRecognize and none of its controls.
-function btnRecognize_KeyPressFcn(hObject, eventdata, handles)
-% hObject    handle to btnRecognize (see GCBO)
-% eventdata  structure with the following fields (see UICONTROL)
-%	Key: name of the key that was pressed, in lower case
-%	Character: character interpretation of the key(s) that was pressed
-%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
-% handles    structure with handles and user data (see GUIDATA)
-end
-
-
 % --- Executes on button press in btnTrain.
 function btnTrain_Callback(hObject, eventdata, handles)
     % hObject    handle to btnTrain (see GCBO)
@@ -686,7 +666,7 @@ function btnTrain_Callback(hObject, eventdata, handles)
         trainingData {i,4} = trainData(handles,folder_path);
         
         %Pause for users to view
-        pause(0.5);
+        pause(0.1);
         %Then clear the axes
         delete(get(handles.uipanel7, 'Children'));
         
@@ -723,4 +703,41 @@ function btnClearTrn_Callback(hObject, eventdata, handles)
     %Set the execution status to waiting for training data
     setappdata(handles.figure1, 'executionStatus', 1);
 
+end
+
+
+% --- Executes on button press in btnLAD.
+function btnLAD_Callback(hObject, eventdata, handles)
+% hObject    handle to btnLAD (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    
+    %Get the execution status to see if the test images are selected, if
+    %none return
+    if getappdata(handles.figure1, 'inputLength') == 0
+        return;
+    end
+    %Get the index of current image
+    index = get(handles.slider1, 'Value');
+    %Get the image
+    [img] = getImageAt(index);
+    
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function axes3_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to axes3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: place code in OpeningFcn to populate axes3
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function figure1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
 end
