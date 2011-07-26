@@ -62,7 +62,7 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     recText = '';
     while 1
         %Get the new letter boundary
-        [rminLetter, rmaxLetter, cminLetter, cmaxLetter, cropped] = bboxLetter(binaryIm, newLetterStartColumn);
+        [rminLetter, rmaxLetter, cminLetter, cmaxLetter, cropped] = bboxletter(binaryIm, newLetterStartColumn);
         %If there are no letters left
         if cminLetter == -1
             break;
