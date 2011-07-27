@@ -64,7 +64,7 @@ function varargout = gui(varargin)
 
     % Edit the above text to modify the response to help gui
 
-    % Last Modified by GUIDE v2.5 26-Jul-2011 20:30:51
+    % Last Modified by GUIDE v2.5 27-Jul-2011 00:25:17
 
     % Begin initialization code - DO NOT EDIT
     gui_Singleton = 1;
@@ -114,6 +114,11 @@ function gui_OpeningFcn(hObject, eventdata, handles, varargin)
 
     %Draw the cursor default at 90 degrees
     drawCursor(handles, 90);
+    
+    %Read HMM models from text files
+    fillHMMModelsPanel(handles);
+    %constructHMMs(handles);
+    
 end
 
 % --- Outputs from this function are returned to the command line.
@@ -245,6 +250,16 @@ function tableData = keyUpdate(tableHandle, keyIndex, keys, changedField, newDat
     end
     %Update the table using the given handle
     set(tableHandle, 'Data', tableData);
+end
+
+%Fill the panel which allows selecting between HMM models
+function fillHMMModelsPanel(handles)
+    
+end
+
+%Read text files defining HMM structures and store them
+function constructHMMs(handles)
+    
 end
 
 % --- Executes on slider movement.
@@ -524,11 +539,13 @@ function executionDelegate(handles)
         set(handles.slider1, 'Value', i);
         %View the image to be recognized
         setDisplayedImage(handles, i);
-        recognizedText = recognizeText(handles,[pathName,images{i+1}],isLADA, letterArea, imageContent,cid,cursorAngle);
-        %Update the table @ui
-        keyUpdate(handles.uitable1, 1, images(i+1), 3, {recognizedText});
-        %and the status bar
-        appendStatus(handles, sprintf('Image %d(%d) recognized as %s', i, inputLength, recognizedText));
+        recognizedText = recognizeText(handles,[pathName,images{i+1}],models,isLADA, letterArea, imageContent,cid,cursorAngle);
+        for j = 1 : size(nmodels,1)
+            %Update the table @ui
+            keyUpdate(handles.uitable1, 1, images(i+1), 2+j, {recognizedText{j}});
+            %and the status bar
+            appendStatus(handles, sprintf('Image %d(%d) recognized as %s by model %s', i, inputLength, recognizedText, models{j}.name));
+        end
         %Pause for a second for user to view before continuing with another
         %image
         pause(1);
@@ -663,7 +680,7 @@ function btnTrain_Callback(hObject, eventdata, handles)
         cd(sourceCodeDirectory);
         
         %Train the data
-        trainingData {i,4} = trainData(handles,folder_path);
+        trainingData {i,4} = trainData(handles,folder_path, models);
         
         %Pause for users to view
         pause(0.1);

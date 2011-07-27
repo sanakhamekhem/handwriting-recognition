@@ -1,4 +1,4 @@
-function  [ hmmParam ] = trainData(handles,folder_path)
+function  [ hmmsParam ] = trainData(handles,folder_path,models)
     
     %Get the source code folder
     sourceCodeDirectory = pwd;
@@ -26,9 +26,13 @@ function  [ hmmParam ] = trainData(handles,folder_path)
     
     %Get the number of images
     nimages = size(validImages,1);
-    %Allocate the storage for training result
-    training_result = zeros(nimages,6);
-    index = 1;
+    %Get the number of HMM Models to trained
+    nmodels = size(models, 1);
+    %Allocate the storage for training result, each HMM model separately
+    training_results = cell(nmodels,1);
+    for i = 1 : nmodels
+        training_results{i} = zeros(nimages, models{i}.obsMatrixSize);
+    end
     %Number of rows in the plot, there will be three different images in
     %each of them
     plotRows = ceil(nimages/3);
@@ -40,22 +44,31 @@ function  [ hmmParam ] = trainData(handles,folder_path)
     for i = 1 : nimages
         %Read the image
         img = im2double(imread(strcat(folder_path,'\', validImages(i,:))));
-        %OBSOLETE
-        %Process the image (trim the white spaces, segment it and compute
-        %bingrid
-        %[bingrid, shape] = improcess(img(:, :, 1));
-        h = subplot(plotRows,3, index,'Parent',handles.uipanel7);
-        observations = count_segments(img,1);
-        %imshowSlicedImageWithHighlightedLines(h, img)
-        %imshow(shape);
-        training_result(index,:) = observations(:);
-        index = index+1;
+        %Run the HMM Models
+        observations = letterObservations();
+        %{
+        for j = 1 : nmodels
+            %Get the observation extraction function
+            oef = eval(['@' models{j}.obsExtractionFunc]);  %# Concatenate string name with '@' and evaluate
+            observations = oef(img,1);
+            %observations = count_segments(img,1);
+            %Store the result
+            training_result{j}(i,:) = observations(:);
+        end
+        %}
+        training_results (1:nmodels) = observations;
     end
     %OBSOLETE
     %training_result = (training_result==0)+training_result
-    training_result
+    %training_result
+    hmmsParam = cell(nmodels,1);
     %Train HMM according to training results we have achieved
-    [ M, N, prior, transmat, obsmat ] = trainHMM (training_result);
-    hmmParam = {M, N, prior, transmat, obsmat};
+    for i = 1 : nmodels
+        %Get models parameters M and N
+        N = models{i}.N;
+        M = models{i}.M;
+        [ prior, transmat, obsmat ] = trainHMM (training_results, M, N);
+        hmmsParam(i) = {M, N, prior, transmat, obsmat};
+    end
 end
 
