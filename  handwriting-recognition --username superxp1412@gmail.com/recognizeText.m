@@ -1,5 +1,5 @@
 %Main function to recognize text from a single text image
-function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageContent,cid,cursorAngle )
+function [ recText ] = recognizeText(handles, image, models, isLADA, letterArea, imageContent,cid,cursorAngle )
 
     % Indicates the letter areas in the image axes handle
     function drawLetterAreaIndicators (handles,color,rmin, rmax, cmin, cmax)
@@ -60,6 +60,8 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
     %Count the letter index starting from 1 and ending is indefinite atm
     index = 1;
     recText = '';
+    %Get the number of different HMM models 
+    nmodels = size(models,1);
     while 1
         %Get the new letter boundary
         [rminLetter, rmaxLetter, cminLetter, cmaxLetter, cropped] = bboxletter(binaryIm, newLetterStartColumn);
@@ -77,22 +79,57 @@ function [ recText ] = recognizeText(handles, image,isLADA, letterArea, imageCon
         %Get hmm parameters for each model
         trainingData = getappdata(handles.figure1, 'trainingData');
         %Check the likelihood of each HMM model
-        for i = 1 : size(trainingData, 1)
-            hmmParams = trainingData{i,4};
-            loglik(i) = dhmm_logprob(observations, hmmParams{3}, hmmParams{4}, hmmParams{5});
-            appendStatus(handles, sprintf('Log likelihood letter is %c : %.2f', trainingData{i,3}, loglik(i)));
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        for i= 1 : nmodels
+            for j = 1 : size(trainingData, 1)
+                hmmParams = trainingData{j,4}{i};
+                loglik(i,j) = dhmm_logprob(observations, hmmParams{3}, hmmParams{4}, hmmParams{5});
+                appendStatus(handles, sprintf('Model %s Log likelihood letter is %c : %.2f', models{i}.name, trainingData{j,3}, loglik(j)));
+            end
+            %Find which letter was most probable
+            [C,I] = max(loglik(i));
+            %If most probable candidate has -Inf likelihood then recognition
+            %yielded no results
+            if C == -Inf
+                recText{i} = [recText{i} '-'];
+                appendStatus(handles,sprintf('Model %s : No suitable letter found for letter candidate %d', models{i}.name,index));
+            else
+                recText{i} = [recText{i} trainingData{I,3}];
+                appendStatus(handles,sprintf('Model %s :Possible candidate for letter #%d is %c', models{i}.name, index, trainingData{I,3}));
+            end
         end
-        %Find which letter was most probable
-        [C,I] = max(loglik);
-        %If most probable candidate has -Inf likelihood then recognition
-        %yielded no results
-        if C == -Inf
-            recText = [recText '-'];
-            appendStatus(handles,sprintf('No suitable letter found for letter candidate %d',index));
-        else
-            recText = [recText trainingData{I,3}];
-            appendStatus(handles,sprintf('Possible candidate for letter #%d is %c', index, trainingData{I,3}));
-        end
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         pause(0.5);
         

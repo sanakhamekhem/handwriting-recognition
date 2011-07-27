@@ -1,4 +1,4 @@
-function [ observations ] = count_segments( I,show)
+function [ observations ] = count_segments( I)
     % The number of slices
     DIV = 6;
 
