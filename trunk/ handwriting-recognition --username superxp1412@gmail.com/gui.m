@@ -11,6 +11,12 @@
 %                       VI.  Finish executing (the same state II, might be
 %                       useful later.
 % 4) trainingData - extracted observations from the training data
+% 5) allHMMModels - all HMM models available in the source code folder,
+% regardless of whether they are going to be used
+% 6) usedModelIndex - used HMM models only, which is max 3 atm 
+% 7) nselectedHMMs - number of selected HMMs
+%
+%
 %
 % Missing functionality/Possible performance improvements
 % 1) Cursor inclination change is not very optimized - too many cos and sin
@@ -64,7 +70,7 @@ function varargout = gui(varargin)
 
     % Edit the above text to modify the response to help gui
 
-    % Last Modified by GUIDE v2.5 27-Jul-2011 00:25:17
+    % Last Modified by GUIDE v2.5 27-Jul-2011 06:58:50
 
     % Begin initialization code - DO NOT EDIT
     gui_Singleton = 1;
@@ -117,7 +123,6 @@ function gui_OpeningFcn(hObject, eventdata, handles, varargin)
     
     %Read HMM models from text files
     fillHMMModelsPanel(handles);
-    %constructHMMs(handles);
     
 end
 
@@ -252,14 +257,149 @@ function tableData = keyUpdate(tableHandle, keyIndex, keys, changedField, newDat
     set(tableHandle, 'Data', tableData);
 end
 
+%Convert char to int '123' -> 123
+function [value] = myChar2Int(str)
+     v=double(str-'0');
+     value=sscanf(v,'%d');
+end
+
 %Fill the panel which allows selecting between HMM models
 function fillHMMModelsPanel(handles)
+    %Get the list of txt files which start with 'hmm'
+    lsm = ls('hmm*.txt');
+    hmmFiles = lsm(1:size(lsm), :);
+    if isempty(hmmFiles)
+        return;
+    end
+    nmodels = size(hmmFiles);
+    %Allocate storage for HMM models
+    allHMMModels = cell(nmodels, 1);
+    for i = 1 : nmodels
+        %Open a hmm model file
+        fid = fopen(hmmFiles(i,:), 'r');
+        hmmFiles(i,:)
+        %Read a field name - value pair
+        C = textscan(fid,'%s %s');
+        fclose(fid);
+        %Switch according to field name
+        for j = 1 : size(C{1}, 1)
+            C{2}{j}
+            whos(C{2}{j})
+            switch C{1}{j}
+                case 'M'
+                    allHMMModels{i}.M = str2num(C{2}{j});
+                case 'N'
+                    allHMMModels{i}.N = str2num(C{2}{j});
+                case 'obsExtractionFunc'
+                    allHMMModels{i}.obsExtractionFunc = C{2}{j};
+                case 'name'
+                    allHMMModels{i}.name = C{2}{j};
+                case 'obsMatrixRows'
+                    allHMMModels{i}.obsMatrixRows = str2num(C{2}{j});
+                case 'obsMatrixCols'
+                    allHMMModels{i}.obsMatrixCols = str2num(C{2}{j});
+            end
+        end
+        
+        %Create the UI element
+        %  Construct the components.
+        toggleButton = uicontrol('Style','pushbutton','String',allHMMModels{i}.name,...
+          'Units', 'characters','Position',[2.5, 8.5 - (i-1)*1.8, 20, 1.5],...
+          'UserData', i, 'Parent', handles.uipanel12, ...
+          'Callback',{@addHMMModel_Callback});
+        
+    end
+    
+    %Store the HMM Models data onto GUI's storage
+    setappdata(handles.figure1, 'allHMMModels' , allHMMModels);
+    %Set the number of currently selected HMMs to 0
+    setappdata(handles.figure1, 'nselectedHMMs' , 0);
     
 end
 
 %Read text files defining HMM structures and store them
-function constructHMMs(handles)
+function setUsedHMMs(handles)
     
+end
+
+%Sets the value 
+function setPanelLabelsProperties(handles,pnlIndex, property, value)
+    switch pnlIndex
+        case 1
+            set(handles.lblModel1M,property,value);
+            set(handles.lblModel1N,property,value);
+            set(handles.lblModel1F,property,value);
+            set(handles.lblModel1O,property,value);
+        case 2
+            set(handles.lblModel2M,property,value);
+            set(handles.lblModel2N,property,value);
+            set(handles.lblModel2F,property,value);
+            set(handles.lblModel2O,property,value);
+        case 3
+            set(handles.lblModel3M,property,value);
+            set(handles.lblModel3N,property,value);
+            set(handles.lblModel3F,property,value);
+            set(handles.lblModel3O,property,value);
+    end
+end
+
+%Loads the HMM Model structure info to GUI for user view
+function loadHMMStructureInfo(handles,nselectedHMMs,index)
+    %Get all HMMs
+    all = getappdata(handles.figure1, 'allHMMModels');
+    %Get the specified one out of them
+    selected = all{index};
+   
+    %Fill labels with info and  change panel title
+    switch nselectedHMMs
+        case 1
+            set(handles.pnlModel1,'Title',sprintf('HMM Model I : %s',selected.name));
+            set(handles.lblModel1M,'String',sprintf('M = %d',selected.M));
+            set(handles.lblModel1N,'String',sprintf('N = %d',selected.N));
+            set(handles.lblModel1F,'String',sprintf('Function : %s',selected.obsExtractionFunc));
+            set(handles.lblModel1O,'String',sprintf('Obs.Size : %dx%d',selected.obsMatrixRows,selected.obsMatrixCols));
+        case 2
+            set(handles.pnlModel2,'Title',sprintf('HMM Model II : %s',selected.name));
+            set(handles.lblModel2M,'String',sprintf('M = %d',selected.M));
+            set(handles.lblModel2N,'String',sprintf('N = %d',selected.N));
+            set(handles.lblModel2F,'String',sprintf('Function : %s',selected.obsExtractionFunc));
+            set(handles.lblModel2O,'String',sprintf('Obs Size : %dx%d',selected.obsMatrixRows,selected.obsMatrixCols));
+        case 3
+            set(handles.pnlModel3,'Title',sprintf('HMM Model III : %s',selected.name));
+            set(handles.lblModel3M,'String',sprintf('M = %d',selected.M));
+            set(handles.lblModel3N,'String',sprintf('N = %d',selected.N));
+            set(handles.lblModel3F,'String',sprintf('Function : %s',selected.obsExtractionFunc));
+            set(handles.lblModel3O,'String',sprintf('Obs Size : %dx%d',selected.obsMatrixRows,selected.obsMatrixCols));
+    end
+end
+
+function addHMMModel_Callback(hObject, eventdata)
+    %Get which HMM Model button was clicked
+    index = get(hObject, 'UserData');
+    %Get which UIPanel is not occupied
+    handles = guidata(hObject);
+    nselectedHMMs = getappdata(handles.figure1, 'nselectedHMMs');
+    %If all 3 panels are occupied, then return
+    if nselectedHMMs == 3
+        return;
+    end
+    %MATLAB uses array indexes which start with 0
+    nselectedHMMs = nselectedHMMs + 1;
+    %Select the first unoccupied panel
+    switch nselectedHMMs
+        case 1
+            pnl = handles.pnlModel1;
+        case 2
+            pnl = handles.pnlModel2;
+        case 3
+            pnl = handles.pnlModel3;
+    end
+    %Enable the controls in the panel
+    setPanelLabelsProperties(handles,nselectedHMMs, 'Enable', 'on');
+    %Load the HMM Model specific values to labels
+    loadHMMStructureInfo(handles,nselectedHMMs,index);
+    %Set the new selected count
+    setappdata(handles.figure1, 'nselectedHMMs', nselectedHMMs);
 end
 
 % --- Executes on slider movement.
@@ -730,7 +870,7 @@ function btnLAD_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
     
     %Get the execution status to see if the test images are selected, if
-    %none return
+    %none then return
     if getappdata(handles.figure1, 'inputLength') == 0
         return;
     end
@@ -757,4 +897,18 @@ function figure1_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to figure1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
+end
+
+
+% --- Executes on button press in pushbutton7.
+function pushbutton7_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton7 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    %Disable the labels in the panels
+    setPanelLabelsProperties(handles,1, 'Enable', 'Off');
+    setPanelLabelsProperties(handles,2, 'Enable', 'Off');
+    setPanelLabelsProperties(handles,3, 'Enable', 'Off');
+    %Set number of selected HMMs to 0
+    setappdata(handles.figure1, 'nselectedHMMs', 0);
 end

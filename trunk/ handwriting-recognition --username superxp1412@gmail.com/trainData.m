@@ -31,7 +31,7 @@ function  [ hmmsParam ] = trainData(handles,folder_path,models)
     %Allocate the storage for training result, each HMM model separately
     training_results = cell(nmodels,1);
     for i = 1 : nmodels
-        training_results{i} = zeros(nimages, models{i}.obsMatrixSize);
+        training_results{i} = zeros(nimages, models{i}.obsMatrixRows, models{i}.obsMatrixCols);
     end
     %Number of rows in the plot, there will be three different images in
     %each of them

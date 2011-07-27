@@ -11,6 +11,12 @@
 %                       VI.  Finish executing (the same state II, might be
 %                       useful later.
 % 4) trainingData - extracted observations from the training data
+% 5) allHMMModels - all HMM models available in the source code folder,
+% regardless of whether they are going to be used
+% 6) usedModelIndex - used HMM models only, which is max 3 atm 
+% 7) nselectedHMMs - number of selected HMMs
+%
+%
 %
 % Missing functionality/Possible performance improvements
 % 1) Cursor inclination change is not very optimized - too many cos and sin
@@ -64,7 +70,7 @@ function varargout = gui(varargin)
 
     % Edit the above text to modify the response to help gui
 
-    % Last Modified by GUIDE v2.5 24-Jul-2011 03:08:17
+    % Last Modified by GUIDE v2.5 27-Jul-2011 06:58:50
 
     % Begin initialization code - DO NOT EDIT
     gui_Singleton = 1;
@@ -112,8 +118,12 @@ function gui_OpeningFcn(hObject, eventdata, handles, varargin)
     
     setStatus(handles, {'No images selected yet'});
 
-    % UIWAIT makes gui wait for user response (see UIRESUME)
-    % uiwait(handles.figure1);
+    %Draw the cursor default at 90 degrees
+    drawCursor(handles, 90);
+    
+    %Read HMM models from text files
+    fillHMMModelsPanel(handles);
+    
 end
 
 % --- Outputs from this function are returned to the command line.
@@ -247,6 +257,145 @@ function tableData = keyUpdate(tableHandle, keyIndex, keys, changedField, newDat
     set(tableHandle, 'Data', tableData);
 end
 
+%Convert char to int '123' -> 123
+function [value] = myChar2Int(str)
+     v=double(str-'0');
+     value=sscanf(v,'%d');
+end
+
+%Fill the panel which allows selecting between HMM models
+function fillHMMModelsPanel(handles)
+    %Get the list of txt files which start with 'hmm'
+    lsm = ls('hmm*.txt');
+    hmmFiles = lsm(1:size(lsm), :);
+    if isempty(hmmFiles)
+        return;
+    end
+    nmodels = size(hmmFiles);
+    %Allocate storage for HMM models
+    allHMMModels = cell(nmodels, 1);
+    for i = 1 : nmodels
+        %Open a hmm model file
+        fid = fopen(hmmFiles(i,:), 'r');
+        hmmFiles(i,:)
+        %Read a field name - value pair
+        C = textscan(fid,'%s %s');
+        fclose(fid);
+        %Switch according to field name
+        for j = 1 : size(C{1}, 1)
+            C{2}{j}
+            whos(C{2}{j})
+            switch C{1}{j}
+                case 'M'
+                    allHMMModels{i}.M = str2num(C{2}{j});
+                case 'N'
+                    allHMMModels{i}.N = str2num(C{2}{j});
+                case 'obsExtractionFunc'
+                    allHMMModels{i}.obsExtractionFunc = C{2}{j};
+                case 'name'
+                    allHMMModels{i}.name = C{2}{j};
+                case 'obsMatrixRows'
+                    allHMMModels{i}.obsMatrixRows = str2num(C{2}{j});
+                case 'obsMatrixCols'
+                    allHMMModels{i}.obsMatrixCols = str2num(C{2}{j});
+            end
+        end
+        
+        %Create the UI element
+        %  Construct the components.
+        toggleButton = uicontrol('Style','pushbutton','String',allHMMModels{i}.name,...
+          'Units', 'characters','Position',[2.5, 8.5 - (i-1)*1.8, 20, 1.5],...
+          'UserData', i, 'Parent', handles.uipanel12, ...
+          'Callback',{@addHMMModel_Callback});
+        
+    end
+    
+    %Store the HMM Models data onto GUI's storage
+    setappdata(handles.figure1, 'allHMMModels' , allHMMModels);
+    %Set the number of currently selected HMMs to 0
+    setappdata(handles.figure1, 'nselectedHMMs' , 0);
+    
+end
+
+%Read text files defining HMM structures and store them
+function setUsedHMMs(handles)
+    
+end
+
+%Sets the value 
+function setPanelLabelsProperties(handles,pnlIndex, property, value)
+    switch pnlIndex
+        case 1
+            set(handles.lblModel1M,property,value);
+            set(handles.lblModel1N,property,value);
+            set(handles.lblModel1F,property,value);
+            set(handles.lblModel1O,property,value);
+        case 2
+            set(handles.lblModel2M,property,value);
+            set(handles.lblModel2N,property,value);
+            set(handles.lblModel2F,property,value);
+            set(handles.lblModel2O,property,value);
+        case 3
+            set(handles.lblModel3M,property,value);
+            set(handles.lblModel3N,property,value);
+            set(handles.lblModel3F,property,value);
+            set(handles.lblModel3O,property,value);
+    end
+end
+
+%Loads the HMM Model structure info to GUI for user view
+function loadHMMStructureInfo(handles,nselectedHMMs,index)
+    %Get all HMMs
+    all = getappdata(handles.figure1, 'allHMMModels');
+    selected = all{index};
+    switch pnlIndex
+        case 1
+            set(handles.lblModel1M,'String',sprintf('M = %d',selected.M));
+            set(handles.lblModel1N,'String',sprintf('M = %d',selected.M));
+            set(handles.lblModel1F,'String',sprintf('Function = %s',selected.obsExtractionFunc));
+            set(handles.lblModel1O,'String',sprintf('M = %d',selected.M));
+        case 2
+            set(handles.lblModel2M,'String',sprintf('M = %d',selected.M));
+            set(handles.lblModel2N,'String',sprintf('M = %d',selected.M));
+            set(handles.lblModel2F,'String',sprintf('Function = %s',selected.obsExtractionFunc));
+            set(handles.lblModel2O,'String',sprintf('M = %d',selected.M));
+        case 3
+            set(handles.lblModel3M,'String',sprintf('M = %d',selected.M));
+            set(handles.lblModel3N,'String',sprintf('N = %d',selected.M));
+            set(handles.lblModel3F,'String',sprintf('Function = %s',selected.obsExtractionFunc));
+            set(handles.lblModel3O,'String',sprintf('M = %d',selected.M));
+    end
+end
+
+function addHMMModel_Callback(hObject, eventdata)
+    %Get which HMM Model button was clicked
+    index = get(hObject, 'UserData');
+    %Get which UIPanel is not occupied
+    handles = guidata(hObject);
+    nselectedHMMs = getappdata(handles.figure1, 'nselectedHMMs');
+    %If all 3 panels are occupied, then return
+    if nselectedHMMs == 3
+        return;
+    end
+    %MATLAB uses array indexes which start with 0
+    nselectedHMMs = nselectedHMMs + 1;
+    %Select the first unoccupied panel
+    switch nselectedHMMs
+        case 1
+            pnl = handles.pnlModel1;
+        case 2
+            pnl = handles.pnlModel2;
+        case 3
+            pnl = handles.pnlModel3;
+    end
+    %Enable the controls in the panel
+    setPanelLabelsProperties(handles,nselectedHMMs, 'Enable', 'on');
+    %Load the HMM Model specific values to labels
+    loadHMMStructureInfo(handles,nselectedHMMs,index);
+    %Set the new selected count
+    setappdata(handles.figure1, 'nselectedHMMs', nselectedHMMs);
+end
+
 % --- Executes on slider movement.
 function slider1_Callback(hObject, eventdata, handles)
     % hObject    handle to slider1 (see GCBO)
@@ -271,10 +420,9 @@ function slider1_Callback(hObject, eventdata, handles)
     end
 end
 
-%Specify the displayed image in the GUI, input is the index of the image
-%among all images read
-function setDisplayedImage(handles,index)
-
+%Images are not stored directly in the GUI, but rather their path. This
+%function returns the image itself on the specified index
+function [img] = getImageAt(handles, index)
     %Retrieve application data
     fileName = getappdata(handles.figure1,'images');
     inputLength = getappdata(handles.figure1,'inputLength');
@@ -283,9 +431,21 @@ function setDisplayedImage(handles,index)
     %Input validity check
     if inputLength==0 || index > inputLength
         fprintf('No such image\n');
+        img = [];
+        return;
     end
 
-    I = imread([pathName,fileName{index+1}]);
+    img = imread([pathName,fileName{index+1}]);
+end
+
+%Specify the displayed image in the GUI, input is the index of the image
+%among all images read
+function setDisplayedImage(handles,index)
+    %Get the image on the specified index
+    [I] = getImageAt(handles,index);
+    if isempty(I)
+        return;
+    end
     %Select the axes
     axes(handles.axesIm);
     %Show the image
@@ -307,25 +467,6 @@ function slider1_CreateFcn(hObject, eventdata, handles)
     if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
         set(hObject,'BackgroundColor',[.9 .9 .9]);
     end
-end
-
-% --- Executes during object creation, after setting all properties.
-function figure1_CreateFcn(hObject, eventdata, handles)
-    % hObject    handle to figure1 (see GCBO)
-    % eventdata  reserved - to be defined in a future version of MATLAB
-    % handles    empty - handles not created until after all CreateFcns called
-end
-
-% --- Executes during object creation, after setting all properties.
-function axes3_CreateFcn(hObject, eventdata, handles)
-    % hObject    handle to axes3 (see GCBO)
-    % eventdata  reserved - to be defined in a future version of MATLAB
-    % handles    empty - handles not created until after all CreateFcns called
-
-    % Hint: place code in OpeningFcn to populate axes3
-    axes(hObject);
-    %Draw the cursor default at 90 degrees
-    line([0 0], [-0.7 0.7], 'LineWidth', 2.8)
 end
 
 %Function to draw the cursor on display when inclination has changed
@@ -356,8 +497,9 @@ function btnRecognize_Callback(hObject, eventdata, handles)
 
     %Get the eligibility for operation
     es = getappdata(handles.figure1, 'executionStatus');
-    if es == 3
-      
+    if es == 3 %Training completed, but no test image selected, 
+               %open the dialog for selecting test images
+        uipushtool1_ClickedCallback(hObject, eventdata, handles);
     elseif es == 4 %Test images selected now recognizing
         set(hObject, 'UserData', 0);
         appendStatus(handles, 'Execution started');
@@ -369,18 +511,18 @@ function btnRecognize_Callback(hObject, eventdata, handles)
     elseif es == 6
         %One pass through selected images is finished and we are starting a new
         %one
-        clearGUIFromPreviousData(handles);
+        clearImagesTableFromPreviousData(handles);
         %Update the status bar
         appendStatus(handles, '');
         appendStatus(handles, 'Previously selected images and options retained');
         appendStatus(handles, 'Execution started');
         %Set the status back to image selected
-        setappdata(handles.figure1, 'executionStatus', 2);
+        setappdata(handles.figure1, 'executionStatus', 4);
         executionDelegate(handles);
     end
 end
 
-function clearGUIFromPreviousData(handles)
+function clearImagesTableFromPreviousData(handles)
     %Clear recognized field of the uitable
     tableData = get(handles.uitable1, 'Data');
     tableData(:,3) = {''};
@@ -531,11 +673,13 @@ function executionDelegate(handles)
         set(handles.slider1, 'Value', i);
         %View the image to be recognized
         setDisplayedImage(handles, i);
-        recognizedText = recognizeText(handles,[pathName,images{i+1}],isLADA, letterArea, imageContent,cid,cursorAngle);
-        %Update the table @ui
-        keyUpdate(handles.uitable1, 1, images(i+1), 3, {recognizedText});
-        %and the status bar
-        appendStatus(handles, sprintf('Image %d(%d) recognized as %s', i, inputLength, recognizedText));
+        recognizedText = recognizeText(handles,[pathName,images{i+1}],models,isLADA, letterArea, imageContent,cid,cursorAngle);
+        for j = 1 : size(nmodels,1)
+            %Update the table @ui
+            keyUpdate(handles.uitable1, 1, images(i+1), 2+j, {recognizedText{j}});
+            %and the status bar
+            appendStatus(handles, sprintf('Image %d(%d) recognized as %s by model %s', i, inputLength, recognizedText, models{j}.name));
+        end
         %Pause for a second for user to view before continuing with another
         %image
         pause(1);
@@ -592,21 +736,9 @@ function listbox2_CreateFcn(hObject, eventdata, handles)
     % Hint: listbox controls usually have a white background on Windows.
     %       See ISPC and COMPUTER.
     if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
+        set(hObject,'BackgroundColor','white');
     end
 end 
-
-
-% --- Executes on key press with focus on btnRecognize and none of its controls.
-function btnRecognize_KeyPressFcn(hObject, eventdata, handles)
-% hObject    handle to btnRecognize (see GCBO)
-% eventdata  structure with the following fields (see UICONTROL)
-%	Key: name of the key that was pressed, in lower case
-%	Character: character interpretation of the key(s) that was pressed
-%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
-% handles    structure with handles and user data (see GUIDATA)
-end
-
 
 % --- Executes on button press in btnTrain.
 function btnTrain_Callback(hObject, eventdata, handles)
@@ -618,6 +750,10 @@ function btnTrain_Callback(hObject, eventdata, handles)
     sourceCodeDirectory = pwd;
     %Open dialog for user to select the training data location
     folder_name = uigetdir(pwd,'Select training data folders');
+    %Check if user pressed cancel or selected a folder
+    if isequal(folder_name,0)
+        return;
+    end
     %Navigate to that folder
     cd(folder_name);
     %Get the training data folder names and trim the result because it
@@ -678,10 +814,10 @@ function btnTrain_Callback(hObject, eventdata, handles)
         cd(sourceCodeDirectory);
         
         %Train the data
-        trainingData {i,4} = trainData(handles,folder_path);
+        trainingData {i,4} = trainData(handles,folder_path, models);
         
         %Pause for users to view
-        pause(0.5);
+        pause(0.1);
         %Then clear the axes
         delete(get(handles.uipanel7, 'Children'));
         
@@ -715,5 +851,52 @@ function btnClearTrn_Callback(hObject, eventdata, handles)
     
     %Clear the training data
     setappdata(handles.figure1, 'trainingData', []);
+    %Set the execution status to waiting for training data
+    setappdata(handles.figure1, 'executionStatus', 1);
 
+end
+
+
+% --- Executes on button press in btnLAD.
+function btnLAD_Callback(hObject, eventdata, handles)
+% hObject    handle to btnLAD (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+    
+    %Get the execution status to see if the test images are selected, if
+    %none then return
+    if getappdata(handles.figure1, 'inputLength') == 0
+        return;
+    end
+    %Get the index of current image
+    index = get(handles.slider1, 'Value');
+    %Get the image
+    [img] = getImageAt(index);
+    
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function axes3_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to axes3 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: place code in OpeningFcn to populate axes3
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function figure1_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+end
+
+
+% --- Executes on button press in pushbutton7.
+function pushbutton7_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton7 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
 end

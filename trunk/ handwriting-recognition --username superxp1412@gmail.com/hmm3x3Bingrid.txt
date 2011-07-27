@@ -1,0 +1,6 @@
+name 3x3-Bingrid
+M 9
+N 9
+obsExtractionFunc improcess_m
+obsMatrixRows 1
+obsMatrixCols 9
