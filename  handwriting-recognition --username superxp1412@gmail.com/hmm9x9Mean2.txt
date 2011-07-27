@@ -1,0 +1,6 @@
+name 9x9-Mean2
+M 9
+N 9
+obsExtractionFunc improcess_m
+obsMatrixRows 1
+obsMatrixCols 9
